@@ -13,7 +13,7 @@ export default function LoginPage() {
     console.log("Sign In submitted:", data);
     // Simulate login
     alert("Login successful! Redirecting to dashboard.");
-    router.push("/");
+    router.push("/dashboard");
   };
 
   const handleGoogleSignIn = () => {

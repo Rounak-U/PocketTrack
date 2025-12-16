@@ -13,7 +13,7 @@ export default function SignupPage() {
     console.log("Sign Up submitted:", data);
     // Simulate signup
     alert("Account created successfully! Redirecting to dashboard.");
-    router.push("/");
+    router.push("/dashboard");
   };
 
   const handleGoogleSignIn = () => {
