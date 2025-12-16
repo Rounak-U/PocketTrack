@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
+import { TrendingUp } from "lucide-react";
 import "./globals.css";
 
 const inter = Inter({
@@ -22,6 +23,14 @@ export default function RootLayout({
       <body
         className={`${inter.variable} antialiased`}
       >
+        {/* PocketTrack Logo */}
+        <div className="fixed top-6 left-6 z-50 flex items-center gap-2">
+          <TrendingUp className="w-8 h-8 text-green-400" />
+          <span className="text-white font-bold text-xl">
+            PocketTrack
+          </span>
+        </div>
+        
         {children}
       </body>
     </html>
