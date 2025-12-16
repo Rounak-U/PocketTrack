@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { X, Check, ArrowRight, BarChart3, Globe2, LogIn } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { GodRays, MeshGradient } from "@paper-design/shaders-react"
+import Link from "next/link"
 
 export default function Hero() {
   const [isExpanded, setIsExpanded] = useState(false)
@@ -42,10 +43,12 @@ export default function Hero() {
         
         {/* Login Button at Top Right */}
         <div className="absolute top-6 right-6 sm:top-8 sm:right-8 z-20">
-          <button className="bg-white/20 backdrop-blur-md text-white px-4 py-1 sm:px-6 sm:py-2 rounded-full hover:bg-white/30 transition-all duration-300 border border-white/20 shadow-lg flex items-center gap-2">
-            <LogIn className="w-4 h-4" />
-            Sign In
-          </button>
+          <Link href="/login">
+            <button className="bg-white/20 backdrop-blur-md text-white px-4 py-1 sm:px-6 sm:py-2 rounded-full hover:bg-white/30 transition-all duration-300 border border-white/20 shadow-lg flex items-center gap-2">
+              <LogIn className="w-4 h-4" />
+              Sign In
+            </button>
+          </Link>
         </div>
         
         {/* GodRays Background - Adjusted to be subtle in both modes */}
