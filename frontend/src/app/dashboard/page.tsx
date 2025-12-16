@@ -195,14 +195,18 @@ const SidebarComponent = ({ activeItem, setActiveItem }: { activeItem: string, s
 };
 
 const SummaryCard = ({ title, value, icon: Icon, color }: { title: string, value: string | number, icon: any, color: string }) => (
-  <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+  <div className="rounded-2xl border border-zinc-800 bg-gradient-to-br from-neutral-900 via-zinc-900 to-neutral-950 p-6 shadow-lg">
     <div className="flex items-center justify-between">
       <div>
-        <p className="text-sm text-gray-600 mb-1">{title}</p>
-        <p className="text-2xl font-bold text-gray-900">{value}</p>
+        <p className="mb-1 text-xs font-medium uppercase tracking-wide text-zinc-500">
+          {title}
+        </p>
+        <p className="text-2xl font-semibold text-slate-100">
+          {value}
+        </p>
       </div>
-      <div className={`p-3 rounded-full ${color}`}>
-        <Icon className="w-6 h-6 text-white" />
+      <div className={cn("flex h-11 w-11 items-center justify-center rounded-xl text-white", color)}>
+        <Icon className="h-5 w-5" />
       </div>
     </div>
   </div>
@@ -214,16 +218,16 @@ const Dashboard = () => {
   return (
     <div
       className={cn(
-        "flex flex-col md:flex-row bg-gray-50 dark:bg-gray-50 w-full flex-1 border overflow-hidden",
+        "flex flex-col md:flex-row w-full flex-1 overflow-hidden bg-gradient-to-br from-black via-zinc-950 to-neutral-950 text-slate-100",
         "h-screen"
       )}
     >
       <SidebarComponent activeItem={activeItem} setActiveItem={setActiveItem} />
       <div className="flex flex-1">
-        <div className="p-4 md:p-8 rounded-tl-2xl border border-gray-200 bg-white flex flex-col gap-6 flex-1 w-full h-full overflow-y-auto">
+        <div className="flex flex-col gap-6 p-4 md:p-8 rounded-tl-2xl border border-zinc-900 bg-black/60 backdrop-blur-sm flex-1 w-full h-full overflow-y-auto">
           <div className="mb-6">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Dashboard</h1>
-            <p className="text-gray-600">Welcome back! Here's your financial overview.</p>
+            <h1 className="mb-2 text-3xl font-semibold text-slate-50">Dashboard</h1>
+            <p className="text-sm text-zinc-400">Welcome back! Here&apos;s your financial overview.</p>
           </div>
 
           {/* Summary Cards */}
@@ -232,33 +236,33 @@ const Dashboard = () => {
               title="Total Spend (This Month)"
               value={`₹${summaryData.totalSpend.toLocaleString()}`}
               icon={DollarSign}
-              color="bg-red-500"
+              color="bg-gradient-to-r from-rose-500 to-orange-500"
             />
             <SummaryCard
               title="Remaining Budget"
               value={`₹${summaryData.remainingBudget.toLocaleString()}`}
               icon={Target}
-              color="bg-green-500"
+              color="bg-gradient-to-r from-emerald-500 to-teal-500"
             />
             <SummaryCard
               title="Transactions Count"
               value={summaryData.transactionsCount}
               icon={Activity}
-              color="bg-blue-500"
+              color="bg-gradient-to-r from-sky-500 to-cyan-500"
             />
             <SummaryCard
               title="Top Spending Category"
               value={summaryData.topCategory}
               icon={ShoppingBag}
-              color="bg-purple-500"
+              color="bg-gradient-to-r from-violet-500 to-indigo-500"
             />
           </div>
 
           {/* Charts Section */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* Category Pie Chart */}
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Spending by Category</h3>
+            <div className="rounded-2xl border border-zinc-800 bg-gradient-to-br from-neutral-900 via-zinc-900 to-neutral-950 p-6 shadow-lg">
+              <h3 className="text-lg font-semibold text-slate-100 mb-4">Spending by Category</h3>
               <ResponsiveContainer width="100%" height={300}>
                 <RechartsPieChart>
                   <Pie
@@ -280,8 +284,8 @@ const Dashboard = () => {
             </div>
 
             {/* Monthly Trend Line Chart */}
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Monthly Spending Trend</h3>
+            <div className="rounded-2xl border border-zinc-800 bg-gradient-to-br from-neutral-900 via-zinc-900 to-neutral-950 p-6 shadow-lg">
+              <h3 className="text-lg font-semibold text-slate-100 mb-4">Monthly Spending Trend</h3>
               <ResponsiveContainer width="100%" height={300}>
                 <LineChart data={monthlyData}>
                   <CartesianGrid strokeDasharray="3 3" />
@@ -296,29 +300,29 @@ const Dashboard = () => {
           </div>
 
           {/* Recent Transactions */}
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+          <div className="rounded-2xl border border-zinc-800 bg-gradient-to-br from-neutral-900 via-zinc-900 to-neutral-950 p-6 shadow-lg">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">Recent Transactions</h3>
-              <button className="text-green-600 hover:text-green-700 font-medium">View All</button>
+              <h3 className="text-lg font-semibold text-slate-100">Recent Transactions</h3>
+              <button className="text-emerald-300 font-medium">View All</button>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="border-b border-gray-200">
-                    <th className="text-left py-3 px-4 font-medium text-gray-600">Date</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-600">Merchant</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-600">Category</th>
-                    <th className="text-right py-3 px-4 font-medium text-gray-600">Amount</th>
+                  <tr className="border-b border-zinc-800">
+                    <th className="text-left py-3 px-4 font-medium text-zinc-400 text-xs uppercase tracking-wide">Date</th>
+                    <th className="text-left py-3 px-4 font-medium text-zinc-400 text-xs uppercase tracking-wide">Merchant</th>
+                    <th className="text-left py-3 px-4 font-medium text-zinc-400 text-xs uppercase tracking-wide">Category</th>
+                    <th className="text-right py-3 px-4 font-medium text-zinc-400 text-xs uppercase tracking-wide">Amount</th>
                   </tr>
                 </thead>
                 <tbody>
                   {recentTransactions.map((transaction, index) => (
-                    <tr key={index} className="border-b border-gray-100 hover:bg-gray-50">
-                      <td className="py-3 px-4 text-gray-900">{transaction.date}</td>
-                      <td className="py-3 px-4 text-gray-900">{transaction.merchant}</td>
-                      <td className="py-3 px-4 text-gray-900">{transaction.category}</td>
+                    <tr key={index} className="border-b border-zinc-900 last:border-0">
+                      <td className="py-3 px-4 text-sm text-slate-200">{transaction.date}</td>
+                      <td className="py-3 px-4 text-sm text-slate-200">{transaction.merchant}</td>
+                      <td className="py-3 px-4 text-sm text-zinc-400">{transaction.category}</td>
                       <td className={`py-3 px-4 text-right font-medium ${
-                        transaction.type === 'credit' ? 'text-green-600' : 'text-red-600'
+                        transaction.type === 'credit' ? 'text-emerald-400' : 'text-rose-400'
                       }`}>
                         {transaction.type === 'credit' ? '+' : '-'}₹{Math.abs(transaction.amount)}
                       </td>
@@ -330,14 +334,33 @@ const Dashboard = () => {
           </div>
 
           {/* Smart Insights */}
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Smart Insights</h3>
-            <div className="space-y-4">
+          <div className="rounded-2xl border border-zinc-800 bg-gradient-to-br from-neutral-900 via-zinc-900 to-neutral-950 p-6 shadow-lg">
+            <h3 className="text-lg font-semibold text-slate-100 mb-4">Smart Insights</h3>
+            <div className="space-y-3">
               {insights.map((insight, index) => (
-                <div key={index} className={`flex items-start gap-3 p-4 rounded-lg ${insight.type === 'warning' ? 'bg-yellow-50' : insight.type === 'tip' ? 'bg-blue-50' : 'bg-green-50'}`}>
-                  <insight.icon className={`w-6 h-6 ${insight.type === 'warning' ? 'text-yellow-600' : insight.type === 'tip' ? 'text-blue-600' : 'text-green-600'}`} />
+                <div
+                  key={index}
+                  className={cn(
+                    "flex items-start gap-3 rounded-xl px-4 py-3",
+                    insight.type === 'warning'
+                      ? 'bg-amber-500/15 border border-amber-500/30'
+                      : insight.type === 'tip'
+                        ? 'bg-sky-500/15 border border-sky-500/30'
+                        : 'bg-emerald-500/15 border border-emerald-500/30'
+                  )}
+                >
+                  <insight.icon
+                    className={cn(
+                      "h-5 w-5",
+                      insight.type === 'warning'
+                        ? 'text-amber-300'
+                        : insight.type === 'tip'
+                          ? 'text-sky-300'
+                          : 'text-emerald-300'
+                    )}
+                  />
                   <div>
-                    <p className="text-gray-900">{insight.message}</p>
+                    <p className="text-sm text-slate-100">{insight.message}</p>
                   </div>
                 </div>
               ))}

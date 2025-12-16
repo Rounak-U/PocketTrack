@@ -172,30 +172,33 @@ const UploadPage = () => {
   return (
     <div
       className={cn(
-        "flex flex-col md:flex-row bg-black w-full flex-1 overflow-hidden",
+        "flex flex-col md:flex-row w-full flex-1 overflow-hidden bg-gradient-to-br from-black via-zinc-950 to-neutral-950 text-slate-100",
         "h-screen"
       )}
     >
       <SidebarComponent activeItem={activeItem} setActiveItem={setActiveItem} />
       <div className="flex flex-1">
-        <div className="p-4 md:p-8 rounded-tl-2xl border border-gray-200 bg-white flex flex-col gap-6 flex-1 w-full h-full overflow-y-auto">
+        <div className="p-4 md:p-8 rounded-tl-2xl border border-zinc-900 bg-black/70 backdrop-blur-sm flex flex-col gap-6 flex-1 w-full h-full overflow-y-auto">
           <div className="mb-6">
-            <h1 className="text-3xl font-bold text-black mb-2">Upload Bank Statement</h1>
-            <p className="text-gray-700">Upload your bank statement to analyze your spending patterns.</p>
+            <h1 className="text-3xl font-semibold text-slate-50 mb-2">Upload Bank Statement</h1>
+            <p className="text-sm text-zinc-400">Upload your bank statement to analyze your spending patterns.</p>
           </div>
 
           <div className="max-w-2xl mx-auto">
             <div
-              className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-green-400 transition-colors duration-200"
+              className={cn(
+                "border-2 border-dashed rounded-xl p-8 text-center",
+                "border-zinc-700 bg-neutral-950/60"
+              )}
               onDrop={handleDrop}
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
             >
               <motion.div animate={{ scale: isDragOver ? 1.1 : 1 }} transition={{ duration: 0.2 }}>
-                <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                <Upload className="w-12 h-12 text-zinc-500 mx-auto mb-4" />
               </motion.div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Drag & Drop Your File Here</h3>
-              <p className="text-gray-600 mb-4">or click to browse files</p>
+              <h3 className="text-lg font-semibold text-slate-100 mb-2">Drag & Drop Your File Here</h3>
+              <p className="text-sm text-zinc-500 mb-4">or click to browse files</p>
               <input
                 type="file"
                 accept=".csv,.pdf,.xlsx"
@@ -205,13 +208,13 @@ const UploadPage = () => {
               />
               <label
                 htmlFor="file-upload"
-                className="inline-block px-6 py-3 bg-green-500 text-white rounded-lg cursor-pointer hover:bg-green-600 transition-colors duration-200"
+                className="inline-block px-6 py-3 bg-emerald-500 text-white rounded-lg cursor-pointer text-sm font-medium"
               >
                 Choose File
               </label>
               {file && (
-                <div className="mt-4 flex items-center justify-center gap-2 text-gray-700">
-                  <FileText className="w-5 h-5" />
+                <div className="mt-4 flex items-center justify-center gap-2 text-zinc-300 text-sm">
+                  <FileText className="w-5 h-5 text-emerald-400" />
                   <span>{file.name}</span>
                 </div>
               )}
@@ -219,10 +222,10 @@ const UploadPage = () => {
 
             {file && (
               <div className="mt-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Statement Month & Year</label>
+                <label className="block text-sm font-medium text-slate-100 mb-2">Statement Month & Year</label>
                 <div className="flex gap-4 justify-center">
                   <select
-                    className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    className="px-4 py-2 border border-zinc-700 bg-neutral-950/80 text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                     value={selectedMonth}
                     onChange={(e) => setSelectedMonth(e.target.value)}
                   >
@@ -241,7 +244,7 @@ const UploadPage = () => {
                     <option value="December">December</option>
                   </select>
                   <select
-                    className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    className="px-4 py-2 border border-zinc-700 bg-neutral-950/80 text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                     value={selectedYear}
                     onChange={(e) => setSelectedYear(e.target.value)}
                   >
@@ -259,14 +262,14 @@ const UploadPage = () => {
                 <button
                   onClick={handleUpload}
                   disabled={uploading || !selectedMonth || !selectedYear}
-                  className="px-8 py-3 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-8 py-3 bg-emerald-500 text-white rounded-lg text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {uploading ? 'Uploading...' : 'Upload Statement'}
                 </button>
                 {uploading && (
-                  <div className="mt-4 w-full bg-gray-200 rounded-full h-2">
+                  <div className="mt-4 w-full bg-zinc-800 rounded-full h-2">
                     <div
-                      className="bg-green-500 h-2 rounded-full transition-all duration-300"
+                      className="bg-emerald-500 h-2 rounded-full transition-all duration-300"
                       style={{ width: `${progress}%` }}
                     ></div>
                   </div>
@@ -275,14 +278,14 @@ const UploadPage = () => {
             )}
 
             {uploadStatus === 'success' && (
-              <div className="mt-6 flex items-center justify-center gap-2 text-green-600">
+              <div className="mt-6 flex items-center justify-center gap-2 text-emerald-400 text-sm">
                 <CheckCircle className="w-5 h-5" />
                 <span>Upload successful! Redirecting to dashboard...</span>
               </div>
             )}
 
             {uploadStatus === 'error' && (
-              <div className="mt-6 flex items-center justify-center gap-2 text-red-600">
+              <div className="mt-6 flex items-center justify-center gap-2 text-rose-400 text-sm">
                 <AlertCircle className="w-5 h-5" />
                 <span>Upload failed. Please try again.</span>
               </div>
@@ -290,22 +293,22 @@ const UploadPage = () => {
           </div>
 
           <div className="max-w-2xl mx-auto mt-8">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Supported Formats</h3>
+            <h3 className="text-lg font-semibold text-slate-100 mb-4">Supported Formats</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="bg-gray-50 rounded-lg p-4 text-center">
-                <FileText className="w-8 h-8 text-blue-500 mx-auto mb-2" />
-                <p className="font-medium">CSV Files</p>
-                <p className="text-sm text-gray-600">Comma-separated values</p>
+              <div className="rounded-xl p-4 text-center border border-zinc-800 bg-gradient-to-br from-neutral-900 via-zinc-900 to-neutral-950">
+                <FileText className="w-8 h-8 text-sky-400 mx-auto mb-2" />
+                <p className="font-medium text-slate-100 text-sm">CSV Files</p>
+                <p className="text-xs text-zinc-500 mt-1">Comma-separated values</p>
               </div>
-              <div className="bg-gray-50 rounded-lg p-4 text-center">
-                <FileText className="w-8 h-8 text-red-500 mx-auto mb-2" />
-                <p className="font-medium">PDF Files</p>
-                <p className="text-sm text-gray-600">Portable document format</p>
+              <div className="rounded-xl p-4 text-center border border-zinc-800 bg-gradient-to-br from-neutral-900 via-zinc-900 to-neutral-950">
+                <FileText className="w-8 h-8 text-rose-400 mx-auto mb-2" />
+                <p className="font-medium text-slate-100 text-sm">PDF Files</p>
+                <p className="text-xs text-zinc-500 mt-1">Portable document format</p>
               </div>
-              <div className="bg-gray-50 rounded-lg p-4 text-center">
-                <FileText className="w-8 h-8 text-green-500 mx-auto mb-2" />
-                <p className="font-medium">Excel Files</p>
-                <p className="text-sm text-gray-600">Spreadsheet format</p>
+              <div className="rounded-xl p-4 text-center border border-zinc-800 bg-gradient-to-br from-neutral-900 via-zinc-900 to-neutral-950">
+                <FileText className="w-8 h-8 text-emerald-400 mx-auto mb-2" />
+                <p className="font-medium text-slate-100 text-sm">Excel Files</p>
+                <p className="text-xs text-zinc-500 mt-1">Spreadsheet format</p>
               </div>
             </div>
           </div>

@@ -165,73 +165,73 @@ const Analytics = () => {
   return (
     <div
       className={cn(
-        "flex flex-col md:flex-row bg-black w-full flex-1 overflow-hidden",
+        "flex flex-col md:flex-row w-full flex-1 overflow-hidden bg-gradient-to-br from-black via-zinc-950 to-neutral-950 text-slate-100",
         "h-screen"
       )}
     >
       <SidebarComponent activeItem={activeItem} setActiveItem={setActiveItem} />
       <div className="flex flex-1">
-        <div className="p-4 md:p-8 rounded-tl-2xl border border-gray-200 bg-white flex flex-col gap-6 flex-1 w-full h-full overflow-y-auto">
+        <div className="p-4 md:p-8 rounded-tl-2xl border border-zinc-900 bg-black/70 backdrop-blur-sm flex flex-col gap-6 flex-1 w-full h-full overflow-y-auto">
           <div className="mb-6">
-            <h1 className="text-3xl font-bold text-black mb-2">Analytics</h1>
-            <p className="text-gray-700">Deep dive into your financial data with advanced analytics and insights.</p>
+            <h1 className="text-3xl font-semibold text-slate-50 mb-2">Analytics</h1>
+            <p className="text-sm text-zinc-400">Deep dive into your financial data with advanced analytics and insights.</p>
           </div>
 
           {/* Monthly Trend Chart */}
-          <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-200 hover:bg-gray-50 transition-colors duration-200">
-            <h3 className="text-lg font-semibold text-black mb-4">Income vs Spending Trend</h3>
+          <div className="bg-gradient-to-br from-neutral-900 via-zinc-900 to-neutral-950 rounded-2xl p-6 shadow-lg border border-zinc-800">
+            <h3 className="text-lg font-semibold text-slate-100 mb-4">Income vs Spending Trend</h3>
             <ResponsiveContainer width="100%" height={300}>
               <AreaChart data={monthlyTrendData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#D1D5DB" />
-                <XAxis dataKey="month" stroke="#6B7280" />
-                <YAxis stroke="#6B7280" />
+                <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
+                <XAxis dataKey="month" stroke="#6b7280" />
+                <YAxis stroke="#6b7280" />
                 <Tooltip
-                  contentStyle={{ backgroundColor: '#FFFFFF', border: '1px solid #E5E7EB', borderRadius: '8px', color: '#111827' }}
+                  contentStyle={{ backgroundColor: '#020617', border: '1px solid #27272a', borderRadius: '8px', color: '#e5e7eb' }}
                   formatter={(value) => `₹${value}`}
                 />
                 <Legend />
-                <Area type="monotone" dataKey="income" stackId="1" stroke="#16a34a" fill="#16a34a" fillOpacity={0.3} />
-                <Area type="monotone" dataKey="spend" stackId="2" stroke="#dc2626" fill="#dc2626" fillOpacity={0.3} />
+                <Area type="monotone" dataKey="income" stackId="1" stroke="#22c55e" fill="#22c55e" fillOpacity={0.25} />
+                <Area type="monotone" dataKey="spend" stackId="2" stroke="#f97316" fill="#f97316" fillOpacity={0.25} />
               </AreaChart>
             </ResponsiveContainer>
           </div>
 
           {/* Category Comparison */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-200 hover:bg-gray-50 transition-colors duration-200">
-              <h3 className="text-lg font-semibold text-black mb-4">Category Spending Changes</h3>
+            <div className="bg-gradient-to-br from-neutral-900 via-zinc-900 to-neutral-950 rounded-2xl p-6 shadow-lg border border-zinc-800">
+              <h3 className="text-lg font-semibold text-slate-100 mb-4">Category Spending Changes</h3>
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={categoryTrendData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#D1D5DB" />
-                <XAxis dataKey="category" stroke="#6B7280" angle={-45} textAnchor="end" height={80} />
-                <YAxis stroke="#6B7280" />
+                <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
+                <XAxis dataKey="category" stroke="#6b7280" angle={-45} textAnchor="end" height={80} />
+                <YAxis stroke="#6b7280" />
                 <Tooltip
-                  contentStyle={{ backgroundColor: '#FFFFFF', border: '1px solid #E5E7EB', borderRadius: '8px', color: '#111827' }}
+                  contentStyle={{ backgroundColor: '#020617', border: '1px solid #27272a', borderRadius: '8px', color: '#e5e7eb' }}
                   formatter={(value) => [`₹${value}`, '']}
                 />
-                <Bar dataKey="current" fill="#2563eb" name="Current Month" />
-                <Bar dataKey="previous" fill="#9ca3af" name="Previous Month" />
+                <Bar dataKey="current" fill="#38bdf8" name="Current Month" />
+                <Bar dataKey="previous" fill="#4b5563" name="Previous Month" />
                 </BarChart>
               </ResponsiveContainer>
             </div>
 
-            <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-200 hover:bg-gray-50 transition-colors duration-200">
-              <h3 className="text-lg font-semibold text-black mb-4">Budget vs Actual</h3>
+            <div className="bg-gradient-to-br from-neutral-900 via-zinc-900 to-neutral-950 rounded-2xl p-6 shadow-lg border border-zinc-800">
+              <h3 className="text-lg font-semibold text-slate-100 mb-4">Budget vs Actual</h3>
               <div className="space-y-4">
                 {budgetData.map((item, index) => (
                   <div key={index} className="flex items-center justify-between">
                     <div className="flex-1">
-                      <p className="text-sm text-gray-700">{item.category}</p>
-                      <div className="w-full bg-gray-200 rounded-full h-2 mt-1">
+                      <p className="text-sm text-zinc-300">{item.category}</p>
+                      <div className="w-full bg-zinc-800 rounded-full h-2 mt-1">
                         <div
-                          className="bg-green-500 h-2 rounded-full"
+                          className="bg-emerald-500 h-2 rounded-full"
                           style={{ width: `${(item.spent / item.budget) * 100}%` }}
                         ></div>
                       </div>
                     </div>
                     <div className="text-right ml-4">
-                      <p className="text-sm text-black">₹{item.spent} / ₹{item.budget}</p>
-                      <p className={`text-xs ${item.remaining > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      <p className="text-sm text-slate-100">₹{item.spent} / ₹{item.budget}</p>
+                      <p className={`text-xs ${item.remaining > 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
                         {item.remaining > 0 ? `₹${item.remaining} left` : `₹${Math.abs(item.remaining)} over`}
                       </p>
                     </div>
@@ -242,14 +242,14 @@ const Analytics = () => {
           </div>
 
           {/* Advanced Insights */}
-          <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-200 hover:bg-gray-50 transition-colors duration-200">
-            <h3 className="text-lg font-semibold text-black mb-4">Advanced Insights</h3>
+          <div className="bg-gradient-to-br from-neutral-900 via-zinc-900 to-neutral-950 rounded-2xl p-6 shadow-lg border border-zinc-800">
+            <h3 className="text-lg font-semibold text-slate-100 mb-4">Advanced Insights</h3>
             <div className="space-y-4">
               {insights.map((insight, index) => (
-                <div key={index} className="flex items-start gap-3 p-4 rounded-lg bg-gray-50">
-                  <insight.icon className={`w-6 h-6 ${insight.color}`} />
+                <div key={index} className="flex items-start gap-3 p-4 rounded-lg bg-zinc-900/80">
+                  <insight.icon className={cn("w-6 h-6", insight.color.replace('text-', 'text-'))} />
                   <div>
-                    <p className="text-black">{insight.message}</p>
+                    <p className="text-sm text-slate-100">{insight.message}</p>
                   </div>
                 </div>
               ))}
@@ -258,23 +258,23 @@ const Analytics = () => {
 
           {/* Key Metrics */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-200 hover:bg-gray-50 transition-colors duration-200 text-center">
-              <TrendingUpIcon className="w-8 h-8 text-green-600 mx-auto mb-2" />
-              <h4 className="text-lg font-semibold text-black">Savings Rate</h4>
-              <p className="text-2xl font-bold text-green-600">78.5%</p>
-              <p className="text-sm text-gray-600">+5.2% from last month</p>
+            <div className="bg-gradient-to-br from-neutral-900 via-zinc-900 to-neutral-950 rounded-2xl p-6 shadow-lg border border-zinc-800 text-center">
+              <TrendingUpIcon className="w-8 h-8 text-emerald-400 mx-auto mb-2" />
+              <h4 className="text-lg font-semibold text-slate-100">Savings Rate</h4>
+              <p className="text-2xl font-bold text-emerald-400">78.5%</p>
+              <p className="text-sm text-zinc-400">+5.2% from last month</p>
             </div>
-            <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-200 hover:bg-gray-50 transition-colors duration-200 text-center">
-              <Target className="w-8 h-8 text-blue-600 mx-auto mb-2" />
-              <h4 className="text-lg font-semibold text-black">Budget Adherence</h4>
-              <p className="text-2xl font-bold text-blue-600">87.3%</p>
-              <p className="text-sm text-gray-600">4 categories over budget</p>
+            <div className="bg-gradient-to-br from-neutral-900 via-zinc-900 to-neutral-950 rounded-2xl p-6 shadow-lg border border-zinc-800 text-center">
+              <Target className="w-8 h-8 text-sky-400 mx-auto mb-2" />
+              <h4 className="text-lg font-semibold text-slate-100">Budget Adherence</h4>
+              <p className="text-2xl font-bold text-sky-400">87.3%</p>
+              <p className="text-sm text-zinc-400">4 categories over budget</p>
             </div>
-            <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-200 hover:bg-gray-50 transition-colors duration-200 text-center">
-              <Activity className="w-8 h-8 text-purple-600 mx-auto mb-2" />
-              <h4 className="text-lg font-semibold text-black">Spending Velocity</h4>
-              <p className="text-2xl font-bold text-purple-600">₹2,450/day</p>
-              <p className="text-sm text-gray-600">Average daily spend</p>
+            <div className="bg-gradient-to-br from-neutral-900 via-zinc-900 to-neutral-950 rounded-2xl p-6 shadow-lg border border-zinc-800 text-center">
+              <Activity className="w-8 h-8 text-violet-400 mx-auto mb-2" />
+              <h4 className="text-lg font-semibold text-slate-100">Spending Velocity</h4>
+              <p className="text-2xl font-bold text-violet-400">₹2,450/day</p>
+              <p className="text-sm text-zinc-400">Average daily spend</p>
             </div>
           </div>
         </div>

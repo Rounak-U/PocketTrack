@@ -153,48 +153,55 @@ const Insights = () => {
 
   const getSeverityColor = (severity: string) => {
     switch (severity) {
-      case 'high': return 'bg-red-100 text-red-800';
-      case 'medium': return 'bg-orange-100 text-orange-800';
-      case 'low': return 'bg-green-100 text-green-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'high':
+        return 'bg-red-500/15 text-red-300 border border-red-500/40';
+      case 'medium':
+        return 'bg-amber-500/15 text-amber-300 border border-amber-500/40';
+      case 'low':
+        return 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/40';
+      default:
+        return 'bg-zinc-800 text-zinc-200 border border-zinc-600';
     }
   };
 
   return (
     <div
       className={cn(
-        "flex flex-col md:flex-row bg-black w-full flex-1 overflow-hidden",
+        "flex flex-col md:flex-row w-full flex-1 overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-emerald-950 text-slate-100",
         "h-screen"
       )}
     >
       <SidebarComponent activeItem={activeItem} setActiveItem={setActiveItem} />
       <div className="flex flex-1">
-        <div className="p-4 md:p-8 rounded-tl-2xl border border-gray-200 bg-white flex flex-col gap-6 flex-1 w-full h-full overflow-y-auto">
+        <div className="p-4 md:p-8 rounded-tl-2xl border border-zinc-900 bg-gradient-to-br from-neutral-950 via-zinc-950 to-neutral-900 backdrop-blur-sm flex flex-col gap-6 flex-1 w-full h-full overflow-y-auto">
           <div className="mb-6">
-            <h1 className="text-3xl font-bold text-black mb-2">🧠 Insights</h1>
-            <p className="text-gray-700">All generated insights from your financial data.</p>
+            <div className="flex items-center gap-2 mb-1">
+              <Lightbulb className="h-6 w-6 text-emerald-400" />
+              <h1 className="text-3xl font-semibold text-slate-50">Insights</h1>
+            </div>
+            <p className="text-sm text-zinc-400">Signals and tips tailored from your spending.</p>
           </div>
 
           {/* Filters */}
           <div className="flex flex-col sm:flex-row gap-4 mb-6">
             <div className="flex-1">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-zinc-500 w-5 h-5" />
                 <input
                   type="text"
                   placeholder="Search insights..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  className="w-full pl-10 pr-4 py-2 border border-zinc-700 rounded-lg bg-neutral-950/80 text-sm text-slate-100 placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                 />
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <Filter className="text-gray-400 w-5 h-5" />
+              <Filter className="text-zinc-500 w-5 h-5" />
               <select
                 value={filterSeverity}
                 onChange={(e) => setFilterSeverity(e.target.value)}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                className="px-4 py-2 border border-zinc-700 rounded-lg bg-neutral-950/80 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
               >
                 <option value="all">All Severities</option>
                 <option value="high">High</option>
@@ -208,12 +215,12 @@ const Insights = () => {
           <div className="space-y-4">
             {filteredInsights.length === 0 ? (
               <div className="text-center py-12">
-                <Lightbulb className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-500">No insights found matching your criteria.</p>
+                <Lightbulb className="w-12 h-12 text-zinc-500 mx-auto mb-4" />
+                <p className="text-zinc-500">No insights found matching your criteria.</p>
               </div>
             ) : (
               filteredInsights.map((insight) => (
-                <div key={insight.id} className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow duration-200">
+                <div key={insight.id} className="bg-gradient-to-br from-neutral-900 via-zinc-900 to-neutral-950 border border-zinc-800 rounded-xl p-6 shadow-lg">
                   <div className="flex items-start gap-4">
                     <div className="flex-shrink-0">
                       <insight.icon className={`w-8 h-8 ${insight.color}`} />
@@ -223,9 +230,9 @@ const Insights = () => {
                         <span className={`text-xs px-2 py-1 rounded-full font-medium ${getSeverityColor(insight.severity)}`}>
                           {insight.severity.toUpperCase()}
                         </span>
-                        <span className="text-sm text-gray-500">{insight.date}</span>
+                        <span className="text-sm text-zinc-500">{insight.date}</span>
                       </div>
-                      <p className="text-gray-900 text-lg">{insight.message}</p>
+                      <p className="text-slate-100 text-lg">{insight.message}</p>
                     </div>
                   </div>
                 </div>
@@ -235,20 +242,20 @@ const Insights = () => {
 
           {/* Summary Stats */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 text-center">
-              <AlertTriangle className="w-8 h-8 text-red-500 mx-auto mb-2" />
-              <h4 className="text-lg font-semibold text-black">Warnings</h4>
-              <p className="text-2xl font-bold text-red-600">{allInsights.filter(i => i.type === 'warning').length}</p>
+            <div className="bg-gradient-to-br from-neutral-900 via-zinc-900 to-neutral-950 rounded-2xl p-6 shadow-lg border border-zinc-800 text-center">
+              <AlertTriangle className="w-8 h-8 text-rose-400 mx-auto mb-2" />
+              <h4 className="text-lg font-semibold text-slate-100">Warnings</h4>
+              <p className="text-2xl font-bold text-rose-400">{allInsights.filter(i => i.type === 'warning').length}</p>
             </div>
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 text-center">
-              <Lightbulb className="w-8 h-8 text-blue-500 mx-auto mb-2" />
-              <h4 className="text-lg font-semibold text-black">Tips</h4>
-              <p className="text-2xl font-bold text-blue-600">{allInsights.filter(i => i.type === 'tip').length}</p>
+            <div className="bg-gradient-to-br from-neutral-900 via-zinc-900 to-neutral-950 rounded-2xl p-6 shadow-lg border border-zinc-800 text-center">
+              <Lightbulb className="w-8 h-8 text-sky-400 mx-auto mb-2" />
+              <h4 className="text-lg font-semibold text-slate-100">Tips</h4>
+              <p className="text-2xl font-bold text-sky-400">{allInsights.filter(i => i.type === 'tip').length}</p>
             </div>
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 text-center">
-              <RefreshCw className="w-8 h-8 text-green-500 mx-auto mb-2" />
-              <h4 className="text-lg font-semibold text-black">Info</h4>
-              <p className="text-2xl font-bold text-green-600">{allInsights.filter(i => i.type === 'info').length}</p>
+            <div className="bg-gradient-to-br from-neutral-900 via-zinc-900 to-neutral-950 rounded-2xl p-6 shadow-lg border border-zinc-800 text-center">
+              <RefreshCw className="w-8 h-8 text-emerald-400 mx-auto mb-2" />
+              <h4 className="text-lg font-semibold text-slate-100">Info</h4>
+              <p className="text-2xl font-bold text-emerald-400">{allInsights.filter(i => i.type === 'info').length}</p>
             </div>
           </div>
         </div>

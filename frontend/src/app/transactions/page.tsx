@@ -201,11 +201,15 @@ const Transactions = () => {
   };
 
   const getAmountColor = (amount: number) => {
-    return amount > 0 ? 'text-green-600' : 'text-red-600';
+    return amount > 0 ? 'text-emerald-400' : 'text-rose-400';
   };
 
   const getTypeIcon = (type: string) => {
-    return type === 'credit' ? <ArrowDownRight className="w-4 h-4 text-green-600" /> : <ArrowUpRight className="w-4 h-4 text-red-600" />;
+    return type === 'credit' ? (
+      <ArrowDownRight className="w-4 h-4 text-emerald-400" />
+    ) : (
+      <ArrowUpRight className="w-4 h-4 text-rose-400" />
+    );
   };
 
   const handleSort = (column: string) => {
@@ -217,32 +221,108 @@ const Transactions = () => {
     }
   };
 
+  const totalCredits = filteredAndSortedTransactions
+    .filter((t) => t.type === 'credit')
+    .reduce((sum, t) => sum + t.amount, 0);
+
+  const totalDebits = filteredAndSortedTransactions
+    .filter((t) => t.type === 'debit')
+    .reduce((sum, t) => sum + Math.abs(t.amount), 0);
+
+  const netAmount = filteredAndSortedTransactions.reduce(
+    (sum, t) => sum + t.amount,
+    0
+  );
+
   return (
     <div
       className={cn(
-        "flex flex-col md:flex-row bg-black w-full flex-1 overflow-hidden",
+        "flex flex-col md:flex-row w-full flex-1 overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-emerald-950 text-slate-100",
         "h-screen"
       )}
     >
       <SidebarComponent activeItem={activeItem} setActiveItem={setActiveItem} />
       <div className="flex flex-1">
-        <div className="p-4 md:p-8 rounded-tl-2xl border border-gray-200 bg-white flex flex-col gap-6 flex-1 w-full h-full overflow-y-auto">
+        <div className="p-4 md:p-8 rounded-tl-2xl border border-zinc-900 bg-gradient-to-br from-neutral-950 via-zinc-950 to-neutral-900 backdrop-blur-sm flex flex-col gap-6 flex-1 w-full h-full">
           <div className="mb-6">
-            <h1 className="text-3xl font-bold text-black mb-2">💳 Transactions</h1>
-            <p className="text-gray-700">View and manage all your transactions.</p>
+            <div className="flex items-center gap-2 mb-1">
+              <FileText className="h-6 w-6 text-emerald-400" />
+              <h1 className="text-3xl font-semibold text-slate-50">Transactions</h1>
+            </div>
+            <p className="text-sm text-zinc-400">
+              View and manage your transaction history with filters and quick stats.
+            </p>
+          </div>
+
+          {/* Counts Strip */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+            <div className="rounded-2xl border border-zinc-800 bg-gradient-to-br from-slate-950 via-slate-900 to-zinc-950 px-4 py-3 shadow-lg">
+              <div className="text-xs text-zinc-400 mb-1">Total Transactions</div>
+              <p className="text-xl font-semibold text-slate-100">
+                {filteredAndSortedTransactions.length}
+              </p>
+            </div>
+            <div className="rounded-2xl border border-zinc-800 bg-gradient-to-br from-slate-950 via-slate-900 to-zinc-950 px-4 py-3 shadow-lg">
+              <div className="text-xs text-zinc-400 mb-1">Credits</div>
+              <p className="text-xl font-semibold text-emerald-300">
+                {filteredAndSortedTransactions.filter((t) => t.type === 'credit').length}
+              </p>
+            </div>
+            <div className="rounded-2xl border border-zinc-800 bg-gradient-to-br from-slate-950 via-slate-900 to-zinc-950 px-4 py-3 shadow-lg">
+              <div className="text-xs text-zinc-400 mb-1">Debits</div>
+              <p className="text-xl font-semibold text-rose-300">
+                {filteredAndSortedTransactions.filter((t) => t.type === 'debit').length}
+              </p>
+            </div>
+          </div>
+
+          {/* Amount Stats Strip */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="rounded-2xl border border-zinc-800 bg-gradient-to-br from-neutral-900 via-zinc-900 to-neutral-950 px-4 py-3 shadow-lg">
+              <div className="flex items-center justify-between text-xs text-zinc-400 mb-1">
+                <span>Total Credits</span>
+                <ArrowDownRight className="w-3.5 h-3.5 text-emerald-400" />
+              </div>
+              <p className="text-lg font-semibold text-emerald-300">
+                {formatAmount(totalCredits)}
+              </p>
+            </div>
+            <div className="rounded-2xl border border-zinc-800 bg-gradient-to-br from-neutral-900 via-zinc-900 to-neutral-950 px-4 py-3 shadow-lg">
+              <div className="flex items-center justify-between text-xs text-zinc-400 mb-1">
+                <span>Total Debits</span>
+                <ArrowUpRight className="w-3.5 h-3.5 text-rose-400" />
+              </div>
+              <p className="text-lg font-semibold text-rose-300">
+                {formatAmount(-totalDebits)}
+              </p>
+            </div>
+            <div className="rounded-2xl border border-zinc-800 bg-gradient-to-br from-neutral-900 via-zinc-900 to-neutral-950 px-4 py-3 shadow-lg">
+              <div className="flex items-center justify-between text-xs text-zinc-400 mb-1">
+                <span>Net Position</span>
+                <Wallet className="w-3.5 h-3.5 text-sky-400" />
+              </div>
+              <p
+                className={cn(
+                  "text-lg font-semibold",
+                  netAmount >= 0 ? "text-emerald-300" : "text-rose-300"
+                )}
+              >
+                {formatAmount(netAmount)}
+              </p>
+            </div>
           </div>
 
           {/* Filters and Search */}
-          <div className="flex flex-col lg:flex-row gap-4 mb-6">
+          <div className="flex flex-col lg:flex-row gap-4 mt-6 mb-6">
             <div className="flex-1">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-zinc-500 w-5 h-5" />
                 <input
                   type="text"
                   placeholder="Search transactions..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  className="w-full pl-10 pr-4 py-2 border border-zinc-700 rounded-lg bg-neutral-950/80 text-sm text-slate-100 placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                 />
               </div>
             </div>
@@ -250,7 +330,7 @@ const Transactions = () => {
               <select
                 value={filterCategory}
                 onChange={(e) => setFilterCategory(e.target.value)}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                className="px-4 py-2 border border-zinc-700 rounded-lg bg-neutral-950/80 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
               >
                 {categories.map(cat => (
                   <option key={cat} value={cat}>
@@ -261,7 +341,7 @@ const Transactions = () => {
               <select
                 value={filterType}
                 onChange={(e) => setFilterType(e.target.value)}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                className="px-4 py-2 border border-zinc-700 rounded-lg bg-neutral-950/80 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
               >
                 {types.map(type => (
                   <option key={type} value={type}>
@@ -273,15 +353,15 @@ const Transactions = () => {
           </div>
 
           {/* Transactions Table */}
-          <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
-            <div className="overflow-x-auto">
+          <div className="bg-neutral-950/80 border border-zinc-800 rounded-xl overflow-hidden shadow-lg">
+            <div className="overflow-x-auto max-h-[560px] overflow-y-auto">
               <table className="w-full">
-                <thead className="bg-gray-50">
+                <thead className="bg-gradient-to-r from-zinc-900 via-slate-900 to-zinc-900">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">
                       <button
                         onClick={() => handleSort('date')}
-                        className="flex items-center gap-1 hover:text-gray-700"
+                        className="flex items-center gap-1"
                       >
                         Date
                         {sortBy === 'date' && (
@@ -289,10 +369,10 @@ const Transactions = () => {
                         )}
                       </button>
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">
                       <button
                         onClick={() => handleSort('description')}
-                        className="flex items-center gap-1 hover:text-gray-700"
+                        className="flex items-center gap-1"
                       >
                         Description
                         {sortBy === 'description' && (
@@ -300,12 +380,12 @@ const Transactions = () => {
                         )}
                       </button>
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Merchant</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">Category</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">Merchant</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">
                       <button
                         onClick={() => handleSort('amount')}
-                        className="flex items-center gap-1 hover:text-gray-700"
+                        className="flex items-center gap-1"
                       >
                         Amount
                         {sortBy === 'amount' && (
@@ -313,27 +393,30 @@ const Transactions = () => {
                         )}
                       </button>
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody className="bg-neutral-950/90 divide-y divide-zinc-900">
                   {filteredAndSortedTransactions.map((transaction) => (
-                    <tr key={transaction.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <tr
+                      key={transaction.id}
+                      className="even:bg-gradient-to-r even:from-neutral-950 even:via-zinc-950 even:to-neutral-950"
+                    >
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-100">
                         {new Date(transaction.date).toLocaleDateString('en-IN')}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-100">
                         <div className="flex items-center gap-2">
                           {getTypeIcon(transaction.type)}
                           {transaction.description}
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        <span className="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-800">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-100">
+                        <span className="px-2 py-1 text-xs rounded-full bg-zinc-900 text-zinc-300 border border-zinc-700">
                           {transaction.category}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-100">
                         {transaction.merchant}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
@@ -341,13 +424,17 @@ const Transactions = () => {
                           {transaction.amount > 0 ? '+' : ''}{formatAmount(transaction.amount)}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        <button className="text-blue-600 hover:text-blue-900 mr-2">
-                          <Eye className="w-4 h-4" />
-                        </button>
-                        <button className="text-green-600 hover:text-green-900">
-                          <Download className="w-4 h-4" />
-                        </button>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-400">
+                        <div className="flex items-center gap-2">
+                          <button className="inline-flex items-center gap-1 rounded-full border border-zinc-700 bg-zinc-900/70 px-3 py-1 text-xs text-sky-300">
+                            <Eye className="w-3.5 h-3.5" aria-hidden="true" />
+                            <span>View</span>
+                          </button>
+                          <button className="inline-flex items-center gap-1 rounded-full border border-zinc-700 bg-zinc-900/70 px-3 py-1 text-xs text-emerald-300">
+                            <Download className="w-3.5 h-3.5" aria-hidden="true" />
+                            <span>Export</span>
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -356,35 +443,6 @@ const Transactions = () => {
             </div>
           </div>
 
-          {/* Summary Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mt-8">
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 text-center">
-              <FileText className="w-8 h-8 text-blue-500 mx-auto mb-2" />
-              <h4 className="text-lg font-semibold text-black">Total Transactions</h4>
-              <p className="text-2xl font-bold text-blue-600">{filteredAndSortedTransactions.length}</p>
-            </div>
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 text-center">
-              <ArrowDownRight className="w-8 h-8 text-green-500 mx-auto mb-2" />
-              <h4 className="text-lg font-semibold text-black">Credits</h4>
-              <p className="text-2xl font-bold text-green-600">
-                {filteredAndSortedTransactions.filter(t => t.type === 'credit').length}
-              </p>
-            </div>
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 text-center">
-              <ArrowUpRight className="w-8 h-8 text-red-500 mx-auto mb-2" />
-              <h4 className="text-lg font-semibold text-black">Debits</h4>
-              <p className="text-2xl font-bold text-red-600">
-                {filteredAndSortedTransactions.filter(t => t.type === 'debit').length}
-              </p>
-            </div>
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 text-center">
-              <DollarSign className="w-8 h-8 text-purple-500 mx-auto mb-2" />
-              <h4 className="text-lg font-semibold text-black">Net Amount</h4>
-              <p className={`text-2xl font-bold ${filteredAndSortedTransactions.reduce((sum, t) => sum + t.amount, 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                {formatAmount(filteredAndSortedTransactions.reduce((sum, t) => sum + t.amount, 0))}
-              </p>
-            </div>
-          </div>
         </div>
       </div>
     </div>
