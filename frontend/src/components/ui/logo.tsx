@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 
 export function Logo() {
   const pathname = usePathname();
-  const isHidden = pathname === '/dashboard' || pathname === '/upload' || pathname === '/analytics';
+  const isHidden = pathname === '/dashboard' || pathname === '/upload' || pathname === '/analytics' || pathname === '/insights' || pathname === '/transactions' || pathname === '/profile';
 
   if (isHidden) return null;
 
