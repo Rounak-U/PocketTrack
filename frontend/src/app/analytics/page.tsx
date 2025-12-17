@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import ProtectedClient from '@/components/auth/ProtectedClient';
 import {
   BarChart3,
   FileText,
@@ -24,7 +25,7 @@ import {
   TrendingUp as TrendingUpIcon
 } from 'lucide-react';
 import { PieChart as RechartsPieChart, Pie, Cell, ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, BarChart, Bar, AreaChart, Area } from 'recharts';
-import { Sidebar, SidebarBody, SidebarLink, useSidebar } from "@/components/ui/sidebar";
+import { Sidebar, SidebarBody, SidebarLink } from "@/components/ui/sidebar";
 import { Logo, LogoIcon } from "@/app/dashboard/page";
 import Link from "next/link";
 import { motion } from "framer-motion";
@@ -67,9 +68,25 @@ const insights = [
 const SidebarComponent = ({ activeItem, setActiveItem }: { activeItem: string, setActiveItem: (item: string) => void }) => {
   const router = useRouter();
 
+  const handleLogout = () => {
+    // Clear tokens from localStorage
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
+    localStorage.removeItem('user');
+    // Redirect to login page
+    router.push('/login');
+  };
+
   const LogoWrapper = () => {
-    const { open } = useSidebar();
-    return open ? <Logo /> : <LogoIcon />;
+    try {
+      // useSidebar may throw if used outside provider in some rendering paths — guard it
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const { useSidebar } = require('@/components/ui/sidebar') as any;
+      const { open } = useSidebar();
+      return open ? <Logo /> : <LogoIcon />;
+    } catch (e) {
+      return <Logo />;
+    }
   };
 
   const links = [
@@ -98,14 +115,14 @@ const SidebarComponent = ({ activeItem, setActiveItem }: { activeItem: string, s
       label: "Insights",
       href: "/insights",
       icon: (
-        <FileText className="text-white h-5 w-5 flex-shrink-0" />
+        <Lightbulb className="text-white h-5 w-5 flex-shrink-0" />
       ),
     },
     {
       label: "Transactions",
       href: "/transactions",
       icon: (
-        <FileText className="text-white h-5 w-5 flex-shrink-0" />
+        <Wallet className="text-white h-5 w-5 flex-shrink-0" />
       ),
     },
     {
@@ -113,13 +130,6 @@ const SidebarComponent = ({ activeItem, setActiveItem }: { activeItem: string, s
       href: "/profile",
       icon: (
         <Settings className="text-white h-5 w-5 flex-shrink-0" />
-      ),
-    },
-    {
-      label: "Logout",
-      href: "/",
-      icon: (
-        <LogOut className="text-white h-5 w-5 flex-shrink-0" />
       ),
     },
   ];
@@ -153,6 +163,13 @@ const SidebarComponent = ({ activeItem, setActiveItem }: { activeItem: string, s
               ),
             }}
           />
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-2 w-full px-3 py-2 mt-2 text-sm text-white hover:bg-red-600/20 rounded-lg transition-colors"
+          >
+            <LogOut className="h-4 w-4" />
+            Logout
+          </button>
         </div>
       </SidebarBody>
     </Sidebar>
@@ -161,8 +178,65 @@ const SidebarComponent = ({ activeItem, setActiveItem }: { activeItem: string, s
 
 const Analytics = () => {
   const [activeItem, setActiveItem] = useState('analytics');
+  const router = useRouter();
+
+  // Data state
+  const [monthlyTrends, setMonthlyTrends] = useState<any[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
+  const [trends, setTrends] = useState<any>({});
+  const [summary, setSummary] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchAnalytics = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+        const API_BASE = (process.env.NEXT_PUBLIC_API_URL) ? process.env.NEXT_PUBLIC_API_URL : 'http://localhost:5000';
+
+        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+        // Fetch multiple endpoints in parallel
+        const [monthlyRes, categoriesRes, trendsRes, summaryRes] = await Promise.all([
+          fetch(`${API_BASE}/api/analytics/monthly`, { headers }),
+          fetch(`${API_BASE}/api/analytics/categories`, { headers }),
+          fetch(`${API_BASE}/api/analytics/trends`, { headers }),
+          fetch(`${API_BASE}/api/analytics/summary`, { headers })
+        ]);
+
+        // Handle any non-ok responses
+        const allResponses = [monthlyRes, categoriesRes, trendsRes, summaryRes];
+        for (const res of allResponses) {
+          if (!res.ok) {
+            const body = await res.json().catch(() => ({}));
+            throw new Error(body.error || 'Failed to load analytics data');
+          }
+        }
+
+        const monthlyJson = await monthlyRes.json();
+        const categoriesJson = await categoriesRes.json();
+        const trendsJson = await trendsRes.json();
+        const summaryJson = await summaryRes.json();
+
+        setMonthlyTrends(monthlyJson.monthlyTrends || monthlyJson.monthlyTrends || []);
+        setCategories(categoriesJson.categories || categoriesJson.spendingByCategory || []);
+        setTrends(trendsJson || {});
+        setSummary(summaryJson.summary || summaryJson);
+      } catch (err: any) {
+        console.error('Analytics fetch error:', err);
+        setError(err.message || 'Error fetching analytics');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAnalytics();
+  }, []);
 
   return (
+    <ProtectedClient>
     <div
       className={cn(
         "flex flex-col md:flex-row w-full flex-1 overflow-hidden bg-gradient-to-br from-black via-zinc-950 to-neutral-950 text-slate-100",
@@ -181,7 +255,7 @@ const Analytics = () => {
           <div className="bg-gradient-to-br from-neutral-900 via-zinc-900 to-neutral-950 rounded-2xl p-6 shadow-lg border border-zinc-800">
             <h3 className="text-lg font-semibold text-slate-100 mb-4">Income vs Spending Trend</h3>
             <ResponsiveContainer width="100%" height={300}>
-              <AreaChart data={monthlyTrendData}>
+              <AreaChart data={monthlyTrends.length ? monthlyTrends : monthlyTrendData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
                 <XAxis dataKey="month" stroke="#6b7280" />
                 <YAxis stroke="#6b7280" />
@@ -201,7 +275,7 @@ const Analytics = () => {
             <div className="bg-gradient-to-br from-neutral-900 via-zinc-900 to-neutral-950 rounded-2xl p-6 shadow-lg border border-zinc-800">
               <h3 className="text-lg font-semibold text-slate-100 mb-4">Category Spending Changes</h3>
               <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={categoryTrendData}>
+                <BarChart data={categories.length ? categories : categoryTrendData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
                 <XAxis dataKey="category" stroke="#6b7280" angle={-45} textAnchor="end" height={80} />
                 <YAxis stroke="#6b7280" />
@@ -217,15 +291,15 @@ const Analytics = () => {
 
             <div className="bg-gradient-to-br from-neutral-900 via-zinc-900 to-neutral-950 rounded-2xl p-6 shadow-lg border border-zinc-800">
               <h3 className="text-lg font-semibold text-slate-100 mb-4">Budget vs Actual</h3>
-              <div className="space-y-4">
-                {budgetData.map((item, index) => (
+                <div className="space-y-4">
+                {(categories.length ? categories.slice(0,5).map((c:any)=>({category:c.category||c._id, budget: (c.totalAmount||0)*1.2 || 0, spent: c.totalAmount || 0, remaining: ((c.totalAmount||0)*1.2) - (c.totalAmount||0)})) : budgetData).map((item, index) => (
                   <div key={index} className="flex items-center justify-between">
                     <div className="flex-1">
                       <p className="text-sm text-zinc-300">{item.category}</p>
                       <div className="w-full bg-zinc-800 rounded-full h-2 mt-1">
                         <div
                           className="bg-emerald-500 h-2 rounded-full"
-                          style={{ width: `${(item.spent / item.budget) * 100}%` }}
+                          style={{ width: `${(item.spent / Math.max(1, item.budget)) * 100}%` }}
                         ></div>
                       </div>
                     </div>
@@ -244,14 +318,33 @@ const Analytics = () => {
           {/* Advanced Insights */}
           <div className="bg-gradient-to-br from-neutral-900 via-zinc-900 to-neutral-950 rounded-2xl p-6 shadow-lg border border-zinc-800">
             <h3 className="text-lg font-semibold text-slate-100 mb-4">Advanced Insights</h3>
-            <div className="space-y-4">
-              {insights.map((insight, index) => (
-                <div key={index} className="flex items-start gap-3 p-4 rounded-lg bg-zinc-900/80">
-                  <insight.icon className={cn("w-6 h-6", insight.color.replace('text-', 'text-'))} />
-                  <div>
-                    <p className="text-sm text-slate-100">{insight.message}</p>
+              <div className="space-y-4">
+              {loading && <p className="text-sm text-zinc-400">Loading insights...</p>}
+              {error && <p className="text-sm text-rose-400">{error}</p>}
+              {!loading && !error && (summary ? (
+                <>
+                  <div className="flex items-start gap-3 p-4 rounded-lg bg-zinc-900/80">
+                    <TrendingUpIcon className="w-6 h-6 text-emerald-400" />
+                    <div>
+                      <p className="text-sm text-slate-100">Savings Rate: {summary.savingsRate ? `${Math.round(summary.savingsRate*100)/100}%` : '—'}</p>
+                    </div>
                   </div>
-                </div>
+                  <div className="flex items-start gap-3 p-4 rounded-lg bg-zinc-900/80">
+                    <Target className="w-6 h-6 text-sky-400" />
+                    <div>
+                      <p className="text-sm text-slate-100">Budget: ₹{summary.monthlyBudget || '—'}</p>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                insights.map((insight, index) => (
+                  <div key={index} className="flex items-start gap-3 p-4 rounded-lg bg-zinc-900/80">
+                    <insight.icon className={cn("w-6 h-6", insight.color.replace('text-', 'text-'))} />
+                    <div>
+                      <p className="text-sm text-slate-100">{insight.message}</p>
+                    </div>
+                  </div>
+                ))
               ))}
             </div>
           </div>
@@ -280,6 +373,7 @@ const Analytics = () => {
         </div>
       </div>
     </div>
+    </ProtectedClient>
   );
 };
 

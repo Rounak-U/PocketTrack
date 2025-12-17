@@ -32,6 +32,9 @@ interface SignInPageProps {
   onResetPassword?: () => void;
   onCreateAccount?: () => void;
   isSignUp?: boolean;
+  otpMode?: boolean;
+  onVerifyOtp?: (event: React.FormEvent<HTMLFormElement>) => void;
+  onResendOtp?: () => void;
 }
 
 // --- SUB-COMPONENTS ---
@@ -65,6 +68,9 @@ export const SignInPage: React.FC<SignInPageProps> = ({
   onResetPassword,
   onCreateAccount,
   isSignUp = false,
+  otpMode = false,
+  onVerifyOtp = (e: React.FormEvent<HTMLFormElement>) => { e.preventDefault(); },
+  onResendOtp = () => {},
 }) => {
   const [showPassword, setShowPassword] = useState(false);
 
@@ -100,15 +106,14 @@ export const SignInPage: React.FC<SignInPageProps> = ({
             <h1 className="animate-element animate-delay-100 text-2xl md:text-3xl font-semibold leading-tight text-white">{title}</h1>
             <p className="animate-element animate-delay-200 text-gray-400 text-xs md:text-sm">{description}</p>
 
-            <form className="space-y-3 md:space-y-5" onSubmit={onSignIn} suppressHydrationWarning>
+            <form className="space-y-3 md:space-y-5" onSubmit={otpMode ? onVerifyOtp : onSignIn} suppressHydrationWarning>
               <div className="animate-element animate-delay-300">
                 <label className="text-xs md:text-sm font-medium text-gray-400">Email Address</label>
                 <GlassInputWrapper>
                   <input name="email" type="email" placeholder="Enter your email address" className="w-full bg-transparent text-sm p-3 md:p-4 rounded-2xl focus:outline-none" suppressHydrationWarning />
                 </GlassInputWrapper>
               </div>
-
-              {isSignUp && (
+              {!otpMode && isSignUp && (
                 <div className="animate-element animate-delay-350">
                   <label className="text-xs md:text-sm font-medium text-gray-400">Full Name</label>
                   <GlassInputWrapper>
@@ -117,17 +122,31 @@ export const SignInPage: React.FC<SignInPageProps> = ({
                 </div>
               )}
 
-              <div className="animate-element animate-delay-400">
-                <label className="text-xs md:text-sm font-medium text-gray-400">Password</label>
-                <GlassInputWrapper>
-                  <div className="relative">
-                    <input name="password" type={showPassword ? 'text' : 'password'} placeholder="Enter your password" className="w-full bg-transparent text-sm p-3 md:p-4 pr-12 rounded-2xl focus:outline-none" suppressHydrationWarning />
-                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute inset-y-0 right-3 flex items-center">
-                      {showPassword ? <EyeOff className="w-5 h-5 text-muted-foreground hover:text-foreground transition-colors" /> : <Eye className="w-5 h-5 text-muted-foreground hover:text-foreground transition-colors" />}
-                    </button>
+              {!otpMode && (
+                <div className="animate-element animate-delay-400">
+                  <label className="text-xs md:text-sm font-medium text-gray-400">Password</label>
+                  <GlassInputWrapper>
+                    <div className="relative">
+                      <input name="password" type={showPassword ? 'text' : 'password'} placeholder="Enter your password" className="w-full bg-transparent text-sm p-3 md:p-4 pr-12 rounded-2xl focus:outline-none" suppressHydrationWarning />
+                      <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute inset-y-0 right-3 flex items-center">
+                        {showPassword ? <EyeOff className="w-5 h-5 text-muted-foreground hover:text-foreground transition-colors" /> : <Eye className="w-5 h-5 text-muted-foreground hover:text-foreground transition-colors" />}
+                      </button>
+                    </div>
+                  </GlassInputWrapper>
+                </div>
+              )}
+
+              {otpMode && (
+                <div className="animate-element animate-delay-350">
+                  <label className="text-xs md:text-sm font-medium text-gray-400">OTP Code</label>
+                  <GlassInputWrapper>
+                    <input name="otp" type="text" placeholder="Enter 6-digit code" className="w-full bg-transparent text-sm p-3 md:p-4 rounded-2xl focus:outline-none" maxLength={6} />
+                  </GlassInputWrapper>
+                  <div className="mt-2 flex justify-between items-center">
+                    <button type="button" onClick={onResendOtp} className="text-sm text-violet-400 hover:underline">Didn't receive code? Resend</button>
                   </div>
-                </GlassInputWrapper>
-              </div>
+                </div>
+              )}
 
               <div className="animate-element animate-delay-500 flex items-center justify-between text-sm">
                 <label className="flex items-center gap-3 cursor-pointer">
@@ -138,7 +157,7 @@ export const SignInPage: React.FC<SignInPageProps> = ({
               </div>
 
               <button type="submit" className="animate-element animate-delay-600 w-full rounded-2xl bg-green-600 py-3 md:py-4 font-medium text-white hover:bg-green-700 transition-colors text-sm">
-                {isSignUp ? "Create Account" : "Sign In"}
+                {otpMode ? "Verify OTP" : (isSignUp ? "Create Account" : "Sign In")}
               </button>
             </form>
 

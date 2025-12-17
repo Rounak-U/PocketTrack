@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import ProtectedClient from '@/components/auth/ProtectedClient';
 import {
   BarChart3,
   FileText,
@@ -28,7 +29,9 @@ import {
   ChevronDown,
   ChevronUp,
   Eye,
-  Download
+  Download,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { Sidebar, SidebarBody, SidebarLink, useSidebar } from "@/components/ui/sidebar";
 import { Logo, LogoIcon } from "@/app/dashboard/page";
@@ -37,27 +40,39 @@ import { motion } from "framer-motion";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 
-// Mock transactions data
-const allTransactions = [
-  { id: 1, date: '2025-12-15', description: 'Zomato', category: 'Food & Dining', amount: -450, type: 'debit', merchant: 'Zomato' },
-  { id: 2, date: '2025-12-15', description: 'Salary Credit', category: 'Income', amount: 50000, type: 'credit', merchant: 'Company' },
-  { id: 3, date: '2025-12-14', description: 'Uber Ride', category: 'Transportation', amount: -320, type: 'debit', merchant: 'Uber' },
-  { id: 4, date: '2025-12-14', description: 'Netflix Subscription', category: 'Entertainment', amount: -499, type: 'debit', merchant: 'Netflix' },
-  { id: 5, date: '2025-12-13', description: 'ATM Withdrawal', category: 'Cash', amount: -2000, type: 'debit', merchant: 'HDFC Bank' },
-  { id: 6, date: '2025-12-13', description: 'Amazon Purchase', category: 'Shopping', amount: -1250, type: 'debit', merchant: 'Amazon' },
-  { id: 7, date: '2025-12-12', description: 'Electricity Bill', category: 'Utilities', amount: -2800, type: 'debit', merchant: 'BSES' },
-  { id: 8, date: '2025-12-12', description: 'Freelance Payment', category: 'Income', amount: 15000, type: 'credit', merchant: 'Client' },
-  { id: 9, date: '2025-12-11', description: 'Starbucks Coffee', category: 'Food & Dining', amount: -180, type: 'debit', merchant: 'Starbucks' },
-  { id: 10, date: '2025-12-11', description: 'Movie Tickets', category: 'Entertainment', amount: -600, type: 'debit', merchant: 'PVR' },
-  { id: 11, date: '2025-12-10', description: 'Grocery Shopping', category: 'Groceries', amount: -2200, type: 'debit', merchant: 'BigBasket' },
-  { id: 12, date: '2025-12-10', description: 'Fuel Station', category: 'Transportation', amount: -1500, type: 'debit', merchant: 'Indian Oil' },
-  { id: 13, date: '2025-12-09', description: 'Medical Checkup', category: 'Healthcare', amount: -2500, type: 'debit', merchant: 'Apollo Hospital' },
-  { id: 14, date: '2025-12-09', description: 'Online Course', category: 'Education', amount: -2999, type: 'debit', merchant: 'Udemy' },
-  { id: 15, date: '2025-12-08', description: 'Mobile Recharge', category: 'Utilities', amount: -599, type: 'debit', merchant: 'Jio' }
-];
+// Transaction interface
+interface Transaction {
+  _id: string;
+  amount: number;
+  description: string;
+  category: string;
+  type: string;
+  date: string;
+  paymentMethod: string;
+  tags: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+// API Response interface
+interface TransactionsResponse {
+  transactions: Transaction[];
+  totalPages: number;
+  currentPage: number;
+  totalTransactions: number;
+}
 
 const SidebarComponent = ({ activeItem, setActiveItem }: { activeItem: string, setActiveItem: (item: string) => void }) => {
   const router = useRouter();
+
+  const handleLogout = () => {
+    // Clear tokens from localStorage
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
+    localStorage.removeItem('user');
+    // Redirect to login page
+    router.push('/login');
+  };
 
   const LogoWrapper = () => {
     const { open } = useSidebar();
@@ -97,7 +112,7 @@ const SidebarComponent = ({ activeItem, setActiveItem }: { activeItem: string, s
       label: "Transactions",
       href: "/transactions",
       icon: (
-        <FileText className="text-white h-5 w-5 flex-shrink-0" />
+        <Wallet className="text-white h-5 w-5 flex-shrink-0" />
       ),
     },
     {
@@ -105,13 +120,6 @@ const SidebarComponent = ({ activeItem, setActiveItem }: { activeItem: string, s
       href: "/profile",
       icon: (
         <Settings className="text-white h-5 w-5 flex-shrink-0" />
-      ),
-    },
-    {
-      label: "Logout",
-      href: "/",
-      icon: (
-        <LogOut className="text-white h-5 w-5 flex-shrink-0" />
       ),
     },
   ];
@@ -145,6 +153,13 @@ const SidebarComponent = ({ activeItem, setActiveItem }: { activeItem: string, s
               ),
             }}
           />
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-2 w-full px-3 py-2 mt-2 text-sm text-white hover:bg-red-600/20 rounded-lg transition-colors"
+          >
+            <LogOut className="h-4 w-4" />
+            Logout
+          </button>
         </div>
       </SidebarBody>
     </Sidebar>
@@ -153,47 +168,112 @@ const SidebarComponent = ({ activeItem, setActiveItem }: { activeItem: string, s
 
 const Transactions = () => {
   const [activeItem, setActiveItem] = useState('transactions');
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalTransactions, setTotalTransactions] = useState(0);
+  const [pageSize] = useState(20);
+
+  // Filters state
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState('all');
   const [filterType, setFilterType] = useState('all');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+
+  // Sort state
   const [sortBy, setSortBy] = useState('date');
   const [sortOrder, setSortOrder] = useState('desc');
 
-  const categories = ['all', ...Array.from(new Set(allTransactions.map(t => t.category)))];
-  const types = ['all', 'credit', 'debit'];
+  // Available categories and types
+  const categories = ['all', 'Food', 'Transport', 'Entertainment', 'Shopping', 'Bills', 'Healthcare', 'Education', 'Other'];
+  const types = ['all', 'income', 'expense'];
 
-  const filteredAndSortedTransactions = allTransactions
-    .filter(transaction => {
-      const matchesSearch = transaction.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           transaction.merchant.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesCategory = filterCategory === 'all' || transaction.category === filterCategory;
-      const matchesType = filterType === 'all' || transaction.type === filterType;
-      return matchesSearch && matchesCategory && matchesType;
-    })
-    .sort((a, b) => {
-      let aValue, bValue;
-      switch (sortBy) {
-        case 'date':
-          aValue = new Date(a.date).getTime();
-          bValue = new Date(b.date).getTime();
-          break;
-        case 'amount':
-          aValue = Math.abs(a.amount);
-          bValue = Math.abs(b.amount);
-          break;
-        case 'description':
-          aValue = a.description.toLowerCase();
-          bValue = b.description.toLowerCase();
-          break;
-        default:
-          return 0;
+  
+
+  // Fetch transactions from API
+  const fetchTransactions = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const params = new URLSearchParams({
+        page: currentPage.toString(),
+        limit: pageSize.toString(),
+      });
+
+      if (filterCategory !== 'all') params.append('category', filterCategory);
+      if (filterType !== 'all') params.append('type', filterType);
+      if (startDate) params.append('startDate', startDate);
+      if (endDate) params.append('endDate', endDate);
+
+      const response = await fetch(`/api/transactions?${params.toString()}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch transactions');
       }
-      if (sortOrder === 'asc') {
-        return aValue > bValue ? 1 : -1;
-      } else {
-        return aValue < bValue ? 1 : -1;
-      }
-    });
+
+      const data: TransactionsResponse = await response.json();
+      setTransactions(data.transactions);
+      setTotalPages(data.totalPages);
+      setTotalTransactions(data.totalTransactions);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred');
+      console.error('Error fetching transactions:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Effect to fetch transactions when filters or pagination change
+  useEffect(() => {
+    fetchTransactions();
+  }, [currentPage, filterCategory, filterType, startDate, endDate]);
+
+  // Filter transactions locally for search (since search is client-side)
+  const filteredTransactions = transactions.filter(transaction => {
+    const matchesSearch = searchTerm === '' ||
+      transaction.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      transaction.category.toLowerCase().includes(searchTerm.toLowerCase());
+    return matchesSearch;
+  });
+
+  // Sort transactions locally
+  const sortedTransactions = [...filteredTransactions].sort((a, b) => {
+    let aValue, bValue;
+    switch (sortBy) {
+      case 'date':
+        aValue = new Date(a.date).getTime();
+        bValue = new Date(b.date).getTime();
+        break;
+      case 'amount':
+        aValue = Math.abs(a.amount);
+        bValue = Math.abs(b.amount);
+        break;
+      case 'description':
+        aValue = a.description.toLowerCase();
+        bValue = b.description.toLowerCase();
+        break;
+      default:
+        return 0;
+    }
+    if (sortOrder === 'asc') {
+      return aValue > bValue ? 1 : -1;
+    } else {
+      return aValue < bValue ? 1 : -1;
+    }
+  });
 
   const formatAmount = (amount: number) => {
     const absAmount = Math.abs(amount);
@@ -205,7 +285,7 @@ const Transactions = () => {
   };
 
   const getTypeIcon = (type: string) => {
-    return type === 'credit' ? (
+    return type === 'income' ? (
       <ArrowDownRight className="w-4 h-4 text-emerald-400" />
     ) : (
       <ArrowUpRight className="w-4 h-4 text-rose-400" />
@@ -221,20 +301,38 @@ const Transactions = () => {
     }
   };
 
-  const totalCredits = filteredAndSortedTransactions
-    .filter((t) => t.type === 'credit')
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  const resetFilters = () => {
+    setSearchTerm('');
+    setFilterCategory('all');
+    setFilterType('all');
+    setStartDate('');
+    setEndDate('');
+    setCurrentPage(1);
+  };
+
+  // Calculate statistics from current filtered transactions
+  const totalCredits = sortedTransactions
+    .filter((t) => t.type === 'income')
     .reduce((sum, t) => sum + t.amount, 0);
 
-  const totalDebits = filteredAndSortedTransactions
-    .filter((t) => t.type === 'debit')
+  const totalDebits = sortedTransactions
+    .filter((t) => t.type === 'expense')
     .reduce((sum, t) => sum + Math.abs(t.amount), 0);
 
-  const netAmount = filteredAndSortedTransactions.reduce(
+  const netAmount = sortedTransactions.reduce(
     (sum, t) => sum + t.amount,
     0
   );
 
+  const creditCount = sortedTransactions.filter((t) => t.type === 'income').length;
+  const debitCount = sortedTransactions.filter((t) => t.type === 'expense').length;
+
   return (
+    <ProtectedClient>
     <div
       className={cn(
         "flex flex-col md:flex-row w-full flex-1 overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-emerald-950 text-slate-100",
@@ -255,23 +353,29 @@ const Transactions = () => {
           </div>
 
           {/* Counts Strip */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
             <div className="rounded-2xl border border-zinc-800 bg-gradient-to-br from-slate-950 via-slate-900 to-zinc-950 px-4 py-3 shadow-lg">
               <div className="text-xs text-zinc-400 mb-1">Total Transactions</div>
               <p className="text-xl font-semibold text-slate-100">
-                {filteredAndSortedTransactions.length}
+                {totalTransactions}
               </p>
             </div>
             <div className="rounded-2xl border border-zinc-800 bg-gradient-to-br from-slate-950 via-slate-900 to-zinc-950 px-4 py-3 shadow-lg">
-              <div className="text-xs text-zinc-400 mb-1">Credits</div>
+              <div className="text-xs text-zinc-400 mb-1">Income</div>
               <p className="text-xl font-semibold text-emerald-300">
-                {filteredAndSortedTransactions.filter((t) => t.type === 'credit').length}
+                {creditCount}
               </p>
             </div>
             <div className="rounded-2xl border border-zinc-800 bg-gradient-to-br from-slate-950 via-slate-900 to-zinc-950 px-4 py-3 shadow-lg">
-              <div className="text-xs text-zinc-400 mb-1">Debits</div>
+              <div className="text-xs text-zinc-400 mb-1">Expenses</div>
               <p className="text-xl font-semibold text-rose-300">
-                {filteredAndSortedTransactions.filter((t) => t.type === 'debit').length}
+                {debitCount}
+              </p>
+            </div>
+            <div className="rounded-2xl border border-zinc-800 bg-gradient-to-br from-slate-950 via-slate-900 to-zinc-950 px-4 py-3 shadow-lg">
+              <div className="text-xs text-zinc-400 mb-1">Pages</div>
+              <p className="text-xl font-semibold text-sky-300">
+                {currentPage} / {totalPages}
               </p>
             </div>
           </div>
@@ -326,7 +430,7 @@ const Transactions = () => {
                 />
               </div>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <select
                 value={filterCategory}
                 onChange={(e) => setFilterCategory(e.target.value)}
@@ -349,103 +453,196 @@ const Transactions = () => {
                   </option>
                 ))}
               </select>
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="px-4 py-2 border border-zinc-700 rounded-lg bg-neutral-950/80 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                placeholder="Start Date"
+              />
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="px-4 py-2 border border-zinc-700 rounded-lg bg-neutral-950/80 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                placeholder="End Date"
+              />
+              <button
+                onClick={resetFilters}
+                className="px-4 py-2 border border-zinc-700 rounded-lg bg-neutral-950/80 text-sm text-slate-100 hover:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+              >
+                Reset
+              </button>
             </div>
           </div>
 
           {/* Transactions Table */}
           <div className="bg-neutral-950/80 border border-zinc-800 rounded-xl overflow-hidden shadow-lg">
-            <div className="overflow-x-auto max-h-[560px] overflow-y-auto">
-              <table className="w-full">
-                <thead className="bg-gradient-to-r from-zinc-900 via-slate-900 to-zinc-900">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">
-                      <button
-                        onClick={() => handleSort('date')}
-                        className="flex items-center gap-1"
-                      >
-                        Date
-                        {sortBy === 'date' && (
-                          sortOrder === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
-                        )}
-                      </button>
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">
-                      <button
-                        onClick={() => handleSort('description')}
-                        className="flex items-center gap-1"
-                      >
-                        Description
-                        {sortBy === 'description' && (
-                          sortOrder === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
-                        )}
-                      </button>
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">Category</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">Merchant</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">
-                      <button
-                        onClick={() => handleSort('amount')}
-                        className="flex items-center gap-1"
-                      >
-                        Amount
-                        {sortBy === 'amount' && (
-                          sortOrder === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
-                        )}
-                      </button>
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-neutral-950/90 divide-y divide-zinc-900">
-                  {filteredAndSortedTransactions.map((transaction) => (
-                    <tr
-                      key={transaction.id}
-                      className="even:bg-gradient-to-r even:from-neutral-950 even:via-zinc-950 even:to-neutral-950"
-                    >
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-100">
-                        {new Date(transaction.date).toLocaleDateString('en-IN')}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-100">
-                        <div className="flex items-center gap-2">
-                          {getTypeIcon(transaction.type)}
-                          {transaction.description}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-100">
-                        <span className="px-2 py-1 text-xs rounded-full bg-zinc-900 text-zinc-300 border border-zinc-700">
-                          {transaction.category}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-100">
-                        {transaction.merchant}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <span className={getAmountColor(transaction.amount)}>
-                          {transaction.amount > 0 ? '+' : ''}{formatAmount(transaction.amount)}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-400">
-                        <div className="flex items-center gap-2">
-                          <button className="inline-flex items-center gap-1 rounded-full border border-zinc-700 bg-zinc-900/70 px-3 py-1 text-xs text-sky-300">
-                            <Eye className="w-3.5 h-3.5" aria-hidden="true" />
-                            <span>View</span>
+            {loading ? (
+              <div className="flex items-center justify-center py-12">
+                <RefreshCw className="w-8 h-8 text-emerald-400 animate-spin" />
+                <span className="ml-2 text-slate-100">Loading transactions...</span>
+              </div>
+            ) : error ? (
+              <div className="flex items-center justify-center py-12">
+                <AlertTriangle className="w-8 h-8 text-rose-400" />
+                <span className="ml-2 text-rose-400">{error}</span>
+              </div>
+            ) : (
+              <>
+                <div className="overflow-x-auto max-h-[560px] overflow-y-auto">
+                  <table className="w-full">
+                    <thead className="bg-gradient-to-r from-zinc-900 via-slate-900 to-zinc-900">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">
+                          <button
+                            onClick={() => handleSort('date')}
+                            className="flex items-center gap-1"
+                          >
+                            Date
+                            {sortBy === 'date' && (
+                              sortOrder === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
+                            )}
                           </button>
-                          <button className="inline-flex items-center gap-1 rounded-full border border-zinc-700 bg-zinc-900/70 px-3 py-1 text-xs text-emerald-300">
-                            <Download className="w-3.5 h-3.5" aria-hidden="true" />
-                            <span>Export</span>
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">
+                          <button
+                            onClick={() => handleSort('description')}
+                            className="flex items-center gap-1"
+                          >
+                            Description
+                            {sortBy === 'description' && (
+                              sortOrder === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
+                            )}
                           </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">Category</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">Payment Method</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">
+                          <button
+                            onClick={() => handleSort('amount')}
+                            className="flex items-center gap-1"
+                          >
+                            Amount
+                            {sortBy === 'amount' && (
+                              sortOrder === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
+                            )}
+                          </button>
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-neutral-950/90 divide-y divide-zinc-900">
+                      {sortedTransactions.length === 0 ? (
+                        <tr>
+                          <td colSpan={6} className="px-6 py-12 text-center text-zinc-400">
+                            No transactions found
+                          </td>
+                        </tr>
+                      ) : (
+                        sortedTransactions.map((transaction) => (
+                          <tr
+                            key={transaction._id}
+                            className="even:bg-gradient-to-r even:from-neutral-950 even:via-zinc-950 even:to-neutral-950 hover:bg-zinc-900/50"
+                          >
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-100">
+                              {new Date(transaction.date).toLocaleDateString('en-IN')}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-100">
+                              <div className="flex items-center gap-2">
+                                {getTypeIcon(transaction.type)}
+                                {transaction.description}
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-100">
+                              <span className="px-2 py-1 text-xs rounded-full bg-zinc-900 text-zinc-300 border border-zinc-700">
+                                {transaction.category}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-100">
+                              {transaction.paymentMethod}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                              <span className={getAmountColor(transaction.amount)}>
+                                {transaction.amount > 0 ? '+' : ''}{formatAmount(transaction.amount)}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-400">
+                              <div className="flex items-center gap-2">
+                                <button className="inline-flex items-center gap-1 rounded-full border border-zinc-700 bg-zinc-900/70 px-3 py-1 text-xs text-sky-300 hover:bg-zinc-800">
+                                  <Eye className="w-3.5 h-3.5" aria-hidden="true" />
+                                  <span>View</span>
+                                </button>
+                                <button className="inline-flex items-center gap-1 rounded-full border border-zinc-700 bg-zinc-900/70 px-3 py-1 text-xs text-emerald-300 hover:bg-zinc-800">
+                                  <Download className="w-3.5 h-3.5" aria-hidden="true" />
+                                  <span>Export</span>
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Pagination */}
+                {totalPages > 1 && (
+                  <div className="bg-gradient-to-r from-zinc-900 via-slate-900 to-zinc-900 px-6 py-4 border-t border-zinc-800">
+                    <div className="flex items-center justify-between">
+                      <div className="text-sm text-zinc-400">
+                        Showing {((currentPage - 1) * pageSize) + 1} to {Math.min(currentPage * pageSize, totalTransactions)} of {totalTransactions} transactions
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => handlePageChange(currentPage - 1)}
+                          disabled={currentPage === 1}
+                          className="inline-flex items-center gap-1 px-3 py-1 text-sm border border-zinc-700 rounded-lg bg-zinc-900/70 text-zinc-300 hover:bg-zinc-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          <ChevronLeft className="w-4 h-4" />
+                          Previous
+                        </button>
+
+                        {/* Page numbers */}
+                        {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                          const pageNum = Math.max(1, Math.min(totalPages - 4, currentPage - 2)) + i;
+                          if (pageNum > totalPages) return null;
+                          return (
+                            <button
+                              key={pageNum}
+                              onClick={() => handlePageChange(pageNum)}
+                              className={cn(
+                                "px-3 py-1 text-sm border border-zinc-700 rounded-lg",
+                                currentPage === pageNum
+                                  ? "bg-emerald-600 text-white border-emerald-600"
+                                  : "bg-zinc-900/70 text-zinc-300 hover:bg-zinc-800"
+                              )}
+                            >
+                              {pageNum}
+                            </button>
+                          );
+                        })}
+
+                        <button
+                          onClick={() => handlePageChange(currentPage + 1)}
+                          disabled={currentPage === totalPages}
+                          className="inline-flex items-center gap-1 px-3 py-1 text-sm border border-zinc-700 rounded-lg bg-zinc-900/70 text-zinc-300 hover:bg-zinc-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          Next
+                          <ChevronRight className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
           </div>
 
         </div>
       </div>
     </div>
+    </ProtectedClient>
   );
 };
 

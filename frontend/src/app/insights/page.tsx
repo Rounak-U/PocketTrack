@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import ProtectedClient from '@/components/auth/ProtectedClient';
 import {
   BarChart3,
   FileText,
@@ -48,6 +49,15 @@ const allInsights = [
 const SidebarComponent = ({ activeItem, setActiveItem }: { activeItem: string, setActiveItem: (item: string) => void }) => {
   const router = useRouter();
 
+  const handleLogout = () => {
+    // Clear tokens from localStorage
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
+    localStorage.removeItem('user');
+    // Redirect to login page
+    router.push('/login');
+  };
+
   const LogoWrapper = () => {
     const { open } = useSidebar();
     return open ? <Logo /> : <LogoIcon />;
@@ -86,7 +96,7 @@ const SidebarComponent = ({ activeItem, setActiveItem }: { activeItem: string, s
       label: "Transactions",
       href: "/transactions",
       icon: (
-        <FileText className="text-white h-5 w-5 flex-shrink-0" />
+        <Wallet className="text-white h-5 w-5 flex-shrink-0" />
       ),
     },
     {
@@ -94,13 +104,6 @@ const SidebarComponent = ({ activeItem, setActiveItem }: { activeItem: string, s
       href: "/profile",
       icon: (
         <Settings className="text-white h-5 w-5 flex-shrink-0" />
-      ),
-    },
-    {
-      label: "Logout",
-      href: "/",
-      icon: (
-        <LogOut className="text-white h-5 w-5 flex-shrink-0" />
       ),
     },
   ];
@@ -134,6 +137,13 @@ const SidebarComponent = ({ activeItem, setActiveItem }: { activeItem: string, s
               ),
             }}
           />
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-2 w-full px-3 py-2 mt-2 text-sm text-white hover:bg-red-600/20 rounded-lg transition-colors"
+          >
+            <LogOut className="h-4 w-4" />
+            Logout
+          </button>
         </div>
       </SidebarBody>
     </Sidebar>
@@ -144,6 +154,7 @@ const Insights = () => {
   const [activeItem, setActiveItem] = useState('insights');
   const [filterSeverity, setFilterSeverity] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const router = useRouter();
 
   const filteredInsights = allInsights.filter(insight => {
     const matchesSeverity = filterSeverity === 'all' || insight.severity === filterSeverity;
@@ -165,6 +176,7 @@ const Insights = () => {
   };
 
   return (
+    <ProtectedClient>
     <div
       className={cn(
         "flex flex-col md:flex-row w-full flex-1 overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-emerald-950 text-slate-100",
@@ -261,6 +273,7 @@ const Insights = () => {
         </div>
       </div>
     </div>
+    </ProtectedClient>
   );
 };
 

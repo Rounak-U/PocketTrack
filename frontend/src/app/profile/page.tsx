@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import ProtectedClient from '@/components/auth/ProtectedClient';
 import {
   BarChart3,
   FileText,
@@ -50,8 +51,6 @@ import Image from "next/image";
 import { cn } from "@/lib/utils";
 
 const SidebarComponent = ({ activeItem, setActiveItem }: { activeItem: string, setActiveItem: (item: string) => void }) => {
-  const router = useRouter();
-
   const LogoWrapper = () => {
     const { open } = useSidebar();
     return open ? <Logo /> : <LogoIcon />;
@@ -90,7 +89,7 @@ const SidebarComponent = ({ activeItem, setActiveItem }: { activeItem: string, s
       label: "Transactions",
       href: "/transactions",
       icon: (
-        <FileText className="text-white h-5 w-5 flex-shrink-0" />
+        <Wallet className="text-white h-5 w-5 flex-shrink-0" />
       ),
     },
     {
@@ -147,6 +146,8 @@ const SidebarComponent = ({ activeItem, setActiveItem }: { activeItem: string, s
 const Profile = () => {
   const [activeItem, setActiveItem] = useState('profile');
   const [isEditing, setIsEditing] = useState(false);
+  const router = useRouter();
+
   const [userData, setUserData] = useState({
     name: 'John Doe',
     email: 'john.doe@example.com',
@@ -159,6 +160,7 @@ const Profile = () => {
   });
 
   const [editData, setEditData] = useState(userData);
+  
 
   const handleSave = () => {
     setUserData(editData);
@@ -171,8 +173,12 @@ const Profile = () => {
   };
 
   const handleLogout = () => {
-    // In a real app, this would clear authentication tokens and redirect
-    window.location.href = '/';
+    // Clear tokens from localStorage
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
+    localStorage.removeItem('user');
+    // Redirect to login page
+    router.push('/login');
   };
 
   const savingsProgress = (userData.currentSavings / userData.savingsGoal) * 100;
@@ -184,6 +190,7 @@ const Profile = () => {
   ];
 
   return (
+    <ProtectedClient>
     <div
       className={cn(
         "flex flex-col md:flex-row w-full flex-1 overflow-hidden bg-gradient-to-br from-black via-zinc-950 to-neutral-950 text-slate-100",
@@ -420,6 +427,7 @@ const Profile = () => {
         </div>
       </div>
     </div>
+    </ProtectedClient>
   );
 };
 

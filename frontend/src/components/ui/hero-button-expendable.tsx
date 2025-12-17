@@ -9,6 +9,16 @@ import Link from "next/link"
 export default function Hero() {
   const [isExpanded, setIsExpanded] = useState(false)
   const [formStep, setFormStep] = useState<"idle" | "submitting" | "success">("idle")
+  const [isAuthed, setIsAuthed] = useState(false)
+
+  useEffect(() => {
+    try {
+      const token = localStorage.getItem('accessToken')
+      setIsAuthed(Boolean(token))
+    } catch (e) {
+      setIsAuthed(false)
+    }
+  }, [])
 
   const handleExpand = () => setIsExpanded(true)
   
@@ -41,12 +51,12 @@ export default function Hero() {
     <>
       <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-white dark:bg-zinc-950 px-4 sm:px-6 py-12 sm:py-20 transition-colors duration-300">
         
-        {/* Login Button at Top Right */}
+        {/* Login / Dashboard Button at Top Right (shows Dashboard when access token exists) */}
         <div className="absolute top-6 right-6 sm:top-8 sm:right-8 z-20">
-          <Link href="/login">
+          <Link href={isAuthed ? "/dashboard" : "/login"}>
             <button className="bg-white/20 backdrop-blur-md text-white px-4 py-1 sm:px-6 sm:py-2 rounded-full hover:bg-white/30 transition-all duration-300 border border-white/20 shadow-lg flex items-center gap-2">
-              <LogIn className="w-4 h-4" />
-              Sign In
+              {isAuthed ? <BarChart3 className="w-4 h-4" /> : <LogIn className="w-4 h-4" />}
+              {isAuthed ? 'Dashboard' : 'Sign In'}
             </button>
           </Link>
         </div>
