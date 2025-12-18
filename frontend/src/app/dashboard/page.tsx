@@ -110,7 +110,6 @@ const SidebarComponent = ({ activeItem, setActiveItem }: { activeItem: string, s
           <div className="mt-8 flex flex-col gap-2">{links.map((link, idx) => <SidebarLink key={idx} link={link} />)}</div>
         </div>
         <div>
-          <SidebarLink link={{ label: "User", href: "/profile", icon: (<Image src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=32&h=32&fit=crop&crop=face" className="h-7 w-7 flex-shrink-0 rounded-full" width={32} height={32} alt="Avatar" />) }} />
           <button onClick={handleLogout} className="flex items-center gap-2 w-full px-3 py-2 mt-2 text-sm text-white hover:bg-red-600/20 rounded-lg transition-colors">
             <LogOut className="h-4 w-4" /> Logout
           </button>

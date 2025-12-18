@@ -1,60 +1,42 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import ProtectedClient from '@/components/auth/ProtectedClient';
 import {
-  BarChart3,
-  FileText,
   Home,
   LogOut,
-  PieChart,
-  Settings,
-  TrendingUp,
   Upload,
-  Wallet,
   Lightbulb,
-  DollarSign,
-  Target,
-  Activity,
-  ShoppingBag,
-  Calendar,
-  ArrowUpRight,
-  ArrowDownRight,
   AlertTriangle,
   RefreshCw,
-  TrendingDown,
   Filter,
-  Search
+  Search,
+  PieChart,
+  CreditCard
 } from 'lucide-react';
+
 import { Sidebar, SidebarBody, SidebarLink, useSidebar } from "@/components/ui/sidebar";
 import { Logo, LogoIcon } from "@/app/dashboard/page";
-import Link from "next/link";
-import { motion } from "framer-motion";
-import Image from "next/image";
-import { cn } from "@/lib/utils";
+import Link from 'next/link';
+import Image from 'next/image';
+import { cn } from '@/lib/utils';
 
-// Mock insights data
-const allInsights = [
-  { id: 1, type: 'warning', severity: 'high', message: 'You spent 35% more on food this month compared to last month', icon: AlertTriangle, color: 'text-red-600', date: '2025-12-15' },
-  { id: 2, type: 'tip', severity: 'medium', message: 'Zomato appears frequently — consider a monthly cap', icon: Lightbulb, color: 'text-blue-600', date: '2025-12-14' },
-  { id: 3, type: 'info', severity: 'low', message: 'Recurring payment detected for Netflix subscription', icon: RefreshCw, color: 'text-green-600', date: '2025-12-13' },
-  { id: 4, type: 'warning', severity: 'high', message: 'Transportation costs increased by 20% this week', icon: AlertTriangle, color: 'text-red-600', date: '2025-12-12' },
-  { id: 5, type: 'tip', severity: 'medium', message: 'You have ₹5,000 left in entertainment budget', icon: Lightbulb, color: 'text-blue-600', date: '2025-12-11' },
-  { id: 6, type: 'info', severity: 'low', message: 'Your savings rate improved by 2%', icon: TrendingUp, color: 'text-green-600', date: '2025-12-10' },
-  { id: 7, type: 'warning', severity: 'medium', message: 'Unusual spending pattern detected on weekends', icon: AlertTriangle, color: 'text-orange-600', date: '2025-12-09' },
-  { id: 8, type: 'tip', severity: 'low', message: 'Consider switching to a cheaper internet plan', icon: Lightbulb, color: 'text-blue-600', date: '2025-12-08' }
-];
+type Insight = {
+  id: string;
+  type: 'warning' | 'tip' | 'info';
+  severity: 'high' | 'medium' | 'low';
+  message: string;
+  date: string;
+};
 
 const SidebarComponent = ({ activeItem, setActiveItem }: { activeItem: string, setActiveItem: (item: string) => void }) => {
   const router = useRouter();
 
   const handleLogout = () => {
-    // Clear tokens from localStorage
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
     localStorage.removeItem('user');
-    // Redirect to login page
     router.push('/login');
   };
 
@@ -64,85 +46,24 @@ const SidebarComponent = ({ activeItem, setActiveItem }: { activeItem: string, s
   };
 
   const links = [
-    {
-      label: "Dashboard",
-      href: "/dashboard",
-      icon: (
-        <Home className="text-white h-5 w-5 flex-shrink-0" />
-      ),
-    },
-    {
-      label: "Upload Statement",
-      href: "/upload",
-      icon: (
-        <Upload className="text-white h-5 w-5 flex-shrink-0" />
-      ),
-    },
-    {
-      label: "Analytics",
-      href: "/analytics",
-      icon: (
-        <BarChart3 className="text-white h-5 w-5 flex-shrink-0" />
-      ),
-    },
-    {
-      label: "Insights",
-      href: "/insights",
-      icon: (
-        <Lightbulb className="text-white h-5 w-5 flex-shrink-0" />
-      ),
-    },
-    {
-      label: "Transactions",
-      href: "/transactions",
-      icon: (
-        <Wallet className="text-white h-5 w-5 flex-shrink-0" />
-      ),
-    },
-    {
-      label: "Profile",
-      href: "/profile",
-      icon: (
-        <Settings className="text-white h-5 w-5 flex-shrink-0" />
-      ),
-    },
+    { label: 'Dashboard', href: '/dashboard', icon: <Home className="text-white h-5 w-5 flex-shrink-0" /> },
+    { label: 'Upload Statement', href: '/upload', icon: <Upload className="text-white h-5 w-5 flex-shrink-0" /> },
+    { label: 'Analytics', href: '/analytics', icon: <PieChart className="text-white h-5 w-5 flex-shrink-0" /> },
+    { label: 'Insights', href: '/insights', icon: <Lightbulb className="text-white h-5 w-5 flex-shrink-0" /> },
+    { label: 'Transactions', href: '/transactions', icon: <CreditCard className="text-white h-5 w-5 flex-shrink-0" /> },
+    { label: 'Profile', href: '/profile', icon: <Image src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=32&h=32&fit=crop&crop=face" className="h-7 w-7 flex-shrink-0 rounded-full" width={32} height={32} alt="Avatar" /> }
   ];
 
   return (
     <Sidebar>
       <SidebarBody className="justify-between gap-10">
         <div className="flex flex-col flex-1 overflow-y-auto overflow-x-hidden">
-          <div className="flex items-center">
-            <LogoWrapper />
-          </div>
-          <div className="mt-8 flex flex-col gap-2">
-            {links.map((link, idx) => (
-              <SidebarLink key={idx} link={link} />
-            ))}
-          </div>
+          <div className="flex items-center"><LogoWrapper /></div>
+          <div className="mt-8 flex flex-col gap-2">{links.map((l, i) => <SidebarLink key={i} link={l} />)}</div>
         </div>
         <div>
-          <SidebarLink
-            link={{
-              label: "User",
-              href: "/profile",
-              icon: (
-                <Image
-                  src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=32&h=32&fit=crop&crop=face"
-                  className="h-7 w-7 flex-shrink-0 rounded-full"
-                  width={32}
-                  height={32}
-                  alt="Avatar"
-                />
-              ),
-            }}
-          />
-          <button
-            onClick={handleLogout}
-            className="flex items-center gap-2 w-full px-3 py-2 mt-2 text-sm text-white hover:bg-red-600/20 rounded-lg transition-colors"
-          >
-            <LogOut className="h-4 w-4" />
-            Logout
+          <button onClick={handleLogout} className="flex items-center gap-2 w-full px-3 py-2 mt-2 text-sm text-white hover:bg-red-600/20 rounded-lg transition-colors">
+            <LogOut className="h-4 w-4" /> Logout
           </button>
         </div>
       </SidebarBody>
@@ -150,131 +71,191 @@ const SidebarComponent = ({ activeItem, setActiveItem }: { activeItem: string, s
   );
 };
 
-const Insights = () => {
+const getSeverityColor = (severity: string) => {
+  switch (severity) {
+    case 'high': return 'bg-red-500/15 text-red-300 border border-red-500/40';
+    case 'medium': return 'bg-amber-500/15 text-amber-300 border border-amber-500/40';
+    case 'low': return 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/40';
+    default: return 'bg-zinc-800 text-zinc-200 border border-zinc-600';
+  }
+};
+
+const InsightsPage: React.FC = () => {
   const [activeItem, setActiveItem] = useState('insights');
-  const [filterSeverity, setFilterSeverity] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
-  const router = useRouter();
+  const [filterSeverity, setFilterSeverity] = useState<'all'|'high'|'medium'|'low'>('all');
 
-  const filteredInsights = allInsights.filter(insight => {
-    const matchesSeverity = filterSeverity === 'all' || insight.severity === filterSeverity;
-    const matchesSearch = insight.message.toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesSeverity && matchesSearch;
-  });
+  const [insights, setInsights] = useState<Insight[] | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const getSeverityColor = (severity: string) => {
-    switch (severity) {
-      case 'high':
-        return 'bg-red-500/15 text-red-300 border border-red-500/40';
-      case 'medium':
-        return 'bg-amber-500/15 text-amber-300 border border-amber-500/40';
-      case 'low':
-        return 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/40';
-      default:
-        return 'bg-zinc-800 text-zinc-200 border border-zinc-600';
+  useEffect(() => {
+    let mounted = true;
+
+    async function fetchInsights() {
+      setLoading(true);
+      setError(null);
+
+      const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+      const headers: Record<string,string> = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
+      const API_ORIGIN = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+
+      try {
+        const [summaryRes, categoriesRes, trendsRes, monthlyRes] = await Promise.all([
+          fetch(`${API_ORIGIN}/api/analytics/summary`, { headers }),
+          fetch(`${API_ORIGIN}/api/analytics/categories`, { headers }),
+          fetch(`${API_ORIGIN}/api/analytics/trends`, { headers }),
+          fetch(`${API_ORIGIN}/api/analytics/monthly`, { headers })
+        ]);
+
+        if (!summaryRes.ok && !categoriesRes.ok && !trendsRes.ok) {
+          throw new Error('No analytics available');
+        }
+
+        const [summaryJson, categoriesJson, trendsJson, monthlyJson] = await Promise.all([
+          summaryRes.ok ? summaryRes.json() : Promise.resolve(null),
+          categoriesRes.ok ? categoriesRes.json() : Promise.resolve(null),
+          trendsRes.ok ? trendsRes.json() : Promise.resolve(null),
+          monthlyRes.ok ? monthlyRes.json() : Promise.resolve(null)
+        ]);
+
+        const results: Insight[] = [];
+        const now = new Date();
+
+        const categories = categoriesJson?.categories || [];
+        if (Array.isArray(categories) && categories.length) {
+          const top = categories[0];
+          if (top && top.percentage >= 30) {
+            results.push({ id: 'cat-top', type: 'warning', severity: 'high', message: `You spent ${top.percentage}% on ${top.category} this period. Consider reviewing this category.`, date: now.toISOString().split('T')[0] });
+          }
+        }
+
+        const monthlyTrends = monthlyJson?.monthlyTrends || [];
+        if (Array.isArray(monthlyTrends) && monthlyTrends.length >= 2) {
+          const last = monthlyTrends[monthlyTrends.length - 1];
+          const prev = monthlyTrends[monthlyTrends.length - 2];
+          const lastExpense = last.totalExpenses || 0;
+          const prevExpense = prev.totalExpenses || 0;
+          if (prevExpense > 0 && ((lastExpense - prevExpense) / prevExpense) * 100 >= 20) {
+            const pct = Math.round(((lastExpense - prevExpense) / prevExpense) * 100);
+            results.push({ id: 'momo-spike', type: 'warning', severity: 'medium', message: `Spending increased ${pct}% compared to previous month.`, date: now.toISOString().split('T')[0] });
+          }
+        }
+
+        const topMerchants = trendsJson?.topMerchants || [];
+        if (Array.isArray(topMerchants) && topMerchants.length) {
+          topMerchants.slice(0,5).forEach((m: any, idx: number) => {
+            if (m.transactionCount >= 2) {
+              results.push({ id: `rec-${idx}`, type: 'tip', severity: 'medium', message: `Recurring payments detected: ${m.merchant} (${m.transactionCount} transactions). Consider subscription management.`, date: now.toISOString().split('T')[0] });
+            }
+          });
+        }
+
+        const summary = summaryJson?.summary;
+        if (summary) {
+          if (summary.savingsRate !== undefined && summary.savingsRate < 10) {
+            results.push({ id: 'savings-low', type: 'tip', severity: 'medium', message: `Your savings rate is ${Math.round(summary.savingsRate)}% this month. Try increasing savings by 5%.`, date: now.toISOString().split('T')[0] });
+          }
+        }
+
+        if (mounted) {
+          setInsights(results.length ? results : []);
+          setLoading(false);
+        }
+      } catch (err: any) {
+        if (mounted) {
+          setError(err.message || 'Failed to load insights');
+          setInsights([]);
+          setLoading(false);
+        }
+      }
     }
-  };
+
+    fetchInsights();
+    return () => { mounted = false; };
+  }, []);
+
+  const filtered = (insights || []).filter(i => (filterSeverity === 'all' || i.severity === filterSeverity) && i.message.toLowerCase().includes(searchTerm.toLowerCase()));
 
   return (
     <ProtectedClient>
-    <div
-      className={cn(
-        "flex flex-col md:flex-row w-full flex-1 overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-emerald-950 text-slate-100",
-        "h-screen"
-      )}
-    >
-      <SidebarComponent activeItem={activeItem} setActiveItem={setActiveItem} />
-      <div className="flex flex-1">
-        <div className="p-4 md:p-8 rounded-tl-2xl border border-zinc-900 bg-gradient-to-br from-neutral-950 via-zinc-950 to-neutral-900 backdrop-blur-sm flex flex-col gap-6 flex-1 w-full h-full overflow-y-auto">
-          <div className="mb-6">
-            <div className="flex items-center gap-2 mb-1">
-              <Lightbulb className="h-6 w-6 text-emerald-400" />
-              <h1 className="text-3xl font-semibold text-slate-50">Insights</h1>
+      <div className={cn("flex flex-col md:flex-row w-full flex-1 overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-emerald-950 text-slate-100", "h-screen")}>
+        <SidebarComponent activeItem={activeItem} setActiveItem={setActiveItem} />
+        <div className="flex flex-1">
+          <div className="p-4 md:p-8 rounded-tl-2xl border border-zinc-900 bg-gradient-to-br from-neutral-950 via-zinc-950 to-neutral-900 backdrop-blur-sm flex flex-col gap-6 flex-1 w-full h-full overflow-y-auto">
+            <div className="mb-6">
+              <div className="flex items-center gap-2 mb-1">
+                <Lightbulb className="h-6 w-6 text-emerald-400" />
+                <h1 className="text-3xl font-semibold text-slate-50">Insights</h1>
+              </div>
+              <p className="text-sm text-zinc-400">Signals and tips tailored from your spending.</p>
             </div>
-            <p className="text-sm text-zinc-400">Signals and tips tailored from your spending.</p>
-          </div>
 
-          {/* Filters */}
-          <div className="flex flex-col sm:flex-row gap-4 mb-6">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-zinc-500 w-5 h-5" />
-                <input
-                  type="text"
-                  placeholder="Search insights..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-zinc-700 rounded-lg bg-neutral-950/80 text-sm text-slate-100 placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-                />
+            <div className="flex flex-col sm:flex-row gap-4 mb-6">
+              <div className="flex-1">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-zinc-500 w-5 h-5" />
+                  <input type="text" placeholder="Search insights..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full pl-10 pr-4 py-2 border border-zinc-700 rounded-lg bg-neutral-950/80 text-sm text-slate-100 placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent" />
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Filter className="text-zinc-500 w-5 h-5" />
+                <select value={filterSeverity} onChange={(e) => setFilterSeverity(e.target.value as any)} className="px-4 py-2 border border-zinc-700 rounded-lg bg-neutral-950/80 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent">
+                  <option value="all">All Severities</option>
+                  <option value="high">High</option>
+                  <option value="medium">Medium</option>
+                  <option value="low">Low</option>
+                </select>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <Filter className="text-zinc-500 w-5 h-5" />
-              <select
-                value={filterSeverity}
-                onChange={(e) => setFilterSeverity(e.target.value)}
-                className="px-4 py-2 border border-zinc-700 rounded-lg bg-neutral-950/80 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-              >
-                <option value="all">All Severities</option>
-                <option value="high">High</option>
-                <option value="medium">Medium</option>
-                <option value="low">Low</option>
-              </select>
-            </div>
-          </div>
 
-          {/* Insights List */}
-          <div className="space-y-4">
-            {filteredInsights.length === 0 ? (
+            {loading ? (
+              <div className="text-center py-32">
+                <Lightbulb className="w-16 h-16 text-zinc-500 mx-auto mb-4 animate-pulse" />
+                <p className="text-zinc-500">Loading insights…</p>
+              </div>
+            ) : error ? (
               <div className="text-center py-12">
-                <Lightbulb className="w-12 h-12 text-zinc-500 mx-auto mb-4" />
-                <p className="text-zinc-500">No insights found matching your criteria.</p>
+                <AlertTriangle className="w-12 h-12 text-rose-400 mx-auto mb-4" />
+                <p className="text-zinc-400 mb-4">{error}</p>
+                <Link href="/upload" className="inline-block px-4 py-2 bg-emerald-600 text-white rounded-lg">Upload Statement</Link>
               </div>
-            ) : (
-              filteredInsights.map((insight) => (
-                <div key={insight.id} className="bg-gradient-to-br from-neutral-900 via-zinc-900 to-neutral-950 border border-zinc-800 rounded-xl p-6 shadow-lg">
-                  <div className="flex items-start gap-4">
-                    <div className="flex-shrink-0">
-                      <insight.icon className={`w-8 h-8 ${insight.color}`} />
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className={`text-xs px-2 py-1 rounded-full font-medium ${getSeverityColor(insight.severity)}`}>
-                          {insight.severity.toUpperCase()}
-                        </span>
-                        <span className="text-sm text-zinc-500">{insight.date}</span>
+            ) : ((insights && insights.length) ? (
+              <div className="space-y-4">
+                {filtered.map(insight => (
+                  <div key={insight.id} className="bg-gradient-to-br from-neutral-900 via-zinc-900 to-neutral-950 border border-zinc-800 rounded-xl p-6 shadow-lg">
+                    <div className="flex items-start gap-4">
+                      <div className="flex-shrink-0">
+                        {insight.type === 'warning' ? <AlertTriangle className="w-8 h-8 text-rose-400" /> : insight.type === 'tip' ? <Lightbulb className="w-8 h-8 text-sky-400" /> : <RefreshCw className="w-8 h-8 text-emerald-400" />}
                       </div>
-                      <p className="text-slate-100 text-lg">{insight.message}</p>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className={`text-xs px-2 py-1 rounded-full font-medium ${getSeverityColor(insight.severity)}`}>{insight.severity.toUpperCase()}</span>
+                          <span className="text-sm text-zinc-500">{insight.date}</span>
+                        </div>
+                        <p className="text-slate-100 text-lg">{insight.message}</p>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))
-            )}
-          </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-24">
+                <Lightbulb className="w-12 h-12 text-zinc-500 mx-auto mb-4" />
+                <p className="text-zinc-500 mb-4">No insights available yet.</p>
+                <Link href="/upload" className="inline-block px-4 py-2 bg-emerald-600 text-white rounded-lg">Upload Statement</Link>
+              </div>
+            ))}
 
-          {/* Summary Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
-            <div className="bg-gradient-to-br from-neutral-900 via-zinc-900 to-neutral-950 rounded-2xl p-6 shadow-lg border border-zinc-800 text-center">
-              <AlertTriangle className="w-8 h-8 text-rose-400 mx-auto mb-2" />
-              <h4 className="text-lg font-semibold text-slate-100">Warnings</h4>
-              <p className="text-2xl font-bold text-rose-400">{allInsights.filter(i => i.type === 'warning').length}</p>
-            </div>
-            <div className="bg-gradient-to-br from-neutral-900 via-zinc-900 to-neutral-950 rounded-2xl p-6 shadow-lg border border-zinc-800 text-center">
-              <Lightbulb className="w-8 h-8 text-sky-400 mx-auto mb-2" />
-              <h4 className="text-lg font-semibold text-slate-100">Tips</h4>
-              <p className="text-2xl font-bold text-sky-400">{allInsights.filter(i => i.type === 'tip').length}</p>
-            </div>
-            <div className="bg-gradient-to-br from-neutral-900 via-zinc-900 to-neutral-950 rounded-2xl p-6 shadow-lg border border-zinc-800 text-center">
-              <RefreshCw className="w-8 h-8 text-emerald-400 mx-auto mb-2" />
-              <h4 className="text-lg font-semibold text-slate-100">Info</h4>
-              <p className="text-2xl font-bold text-emerald-400">{allInsights.filter(i => i.type === 'info').length}</p>
-            </div>
           </div>
         </div>
       </div>
-    </div>
     </ProtectedClient>
   );
 };
 
-export default Insights;
+export default InsightsPage;
+
+

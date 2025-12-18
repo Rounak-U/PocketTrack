@@ -254,64 +254,91 @@ const Analytics = () => {
           {/* Monthly Trend Chart */}
           <div className="bg-gradient-to-br from-neutral-900 via-zinc-900 to-neutral-950 rounded-2xl p-6 shadow-lg border border-zinc-800">
             <h3 className="text-lg font-semibold text-slate-100 mb-4">Income vs Spending Trend</h3>
-            <ResponsiveContainer width="100%" height={300}>
-              <AreaChart data={monthlyTrends.length ? monthlyTrends : monthlyTrendData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
-                <XAxis dataKey="month" stroke="#6b7280" />
-                <YAxis stroke="#6b7280" />
-                <Tooltip
-                  contentStyle={{ backgroundColor: '#020617', border: '1px solid #27272a', borderRadius: '8px', color: '#e5e7eb' }}
-                  formatter={(value) => `₹${value}`}
-                />
-                <Legend />
-                <Area type="monotone" dataKey="income" stackId="1" stroke="#22c55e" fill="#22c55e" fillOpacity={0.25} />
-                <Area type="monotone" dataKey="spend" stackId="2" stroke="#f97316" fill="#f97316" fillOpacity={0.25} />
-              </AreaChart>
-            </ResponsiveContainer>
+            {loading ? (
+              <div className="flex items-center justify-center h-72 text-sm text-zinc-400">Loading chart...</div>
+            ) : error ? (
+              <div className="flex items-center justify-center h-72 text-sm text-rose-400">{error}</div>
+            ) : (monthlyTrends && monthlyTrends.length ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <AreaChart data={monthlyTrends}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
+                  <XAxis dataKey="monthName" stroke="#6b7280" />
+                  <YAxis stroke="#6b7280" />
+                  <Tooltip
+                    contentStyle={{ backgroundColor: '#020617', border: '1px solid #27272a', borderRadius: '8px', color: '#e5e7eb' }}
+                    formatter={(value) => `₹${value}`}
+                  />
+                  <Legend />
+                  <Area type="monotone" dataKey="totalIncome" stackId="1" stroke="#22c55e" fill="#22c55e" fillOpacity={0.25} />
+                  <Area type="monotone" dataKey="totalExpenses" stackId="2" stroke="#f97316" fill="#f97316" fillOpacity={0.25} />
+                </AreaChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex items-center justify-center h-72 text-sm text-zinc-400">No monthly data available</div>
+            ))}
           </div>
 
           {/* Category Comparison */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <div className="bg-gradient-to-br from-neutral-900 via-zinc-900 to-neutral-950 rounded-2xl p-6 shadow-lg border border-zinc-800">
               <h3 className="text-lg font-semibold text-slate-100 mb-4">Category Spending Changes</h3>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={categories.length ? categories : categoryTrendData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
-                <XAxis dataKey="category" stroke="#6b7280" angle={-45} textAnchor="end" height={80} />
-                <YAxis stroke="#6b7280" />
-                <Tooltip
-                  contentStyle={{ backgroundColor: '#020617', border: '1px solid #27272a', borderRadius: '8px', color: '#e5e7eb' }}
-                  formatter={(value) => [`₹${value}`, '']}
-                />
-                <Bar dataKey="current" fill="#38bdf8" name="Current Month" />
-                <Bar dataKey="previous" fill="#4b5563" name="Previous Month" />
-                </BarChart>
-              </ResponsiveContainer>
+              {loading ? (
+                <div className="flex items-center justify-center h-72 text-sm text-zinc-400">Loading categories...</div>
+              ) : error ? (
+                <div className="flex items-center justify-center h-72 text-sm text-rose-400">{error}</div>
+              ) : (categories && categories.length ? (
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={categories}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
+                    <XAxis dataKey="category" stroke="#6b7280" angle={-45} textAnchor="end" height={80} />
+                    <YAxis stroke="#6b7280" />
+                    <Tooltip
+                      contentStyle={{ backgroundColor: '#020617', border: '1px solid #27272a', borderRadius: '8px', color: '#e5e7eb' }}
+                      formatter={(value) => [`₹${value}`, '']}
+                    />
+                    <Bar dataKey="totalAmount" fill="#38bdf8" name="Amount" />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex items-center justify-center h-72 text-sm text-zinc-400">No category data</div>
+              ))}
             </div>
 
             <div className="bg-gradient-to-br from-neutral-900 via-zinc-900 to-neutral-950 rounded-2xl p-6 shadow-lg border border-zinc-800">
               <h3 className="text-lg font-semibold text-slate-100 mb-4">Budget vs Actual</h3>
-                <div className="space-y-4">
-                {(categories.length ? categories.slice(0,5).map((c:any)=>({category:c.category||c._id, budget: (c.totalAmount||0)*1.2 || 0, spent: c.totalAmount || 0, remaining: ((c.totalAmount||0)*1.2) - (c.totalAmount||0)})) : budgetData).map((item, index) => (
-                  <div key={index} className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <p className="text-sm text-zinc-300">{item.category}</p>
-                      <div className="w-full bg-zinc-800 rounded-full h-2 mt-1">
-                        <div
-                          className="bg-emerald-500 h-2 rounded-full"
-                          style={{ width: `${(item.spent / Math.max(1, item.budget)) * 100}%` }}
-                        ></div>
-                      </div>
-                    </div>
-                    <div className="text-right ml-4">
-                      <p className="text-sm text-slate-100">₹{item.spent} / ₹{item.budget}</p>
-                      <p className={`text-xs ${item.remaining > 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                        {item.remaining > 0 ? `₹${item.remaining} left` : `₹${Math.abs(item.remaining)} over`}
-                      </p>
-                    </div>
+                    <div className="space-y-4">
+                    {loading ? (
+                      <p className="text-sm text-zinc-400">Loading budget...</p>
+                    ) : error ? (
+                      <p className="text-sm text-rose-400">{error}</p>
+                    ) : (categories && categories.length ? (
+                      categories.slice(0,5).map((c:any, index:number)=>{
+                        const item = { category: c.category || c._id, budget: (c.totalAmount||0)*1.2 || 0, spent: c.totalAmount || 0 };
+                        const remaining = Math.round(item.budget - item.spent);
+                        return (
+                          <div key={index} className="flex items-center justify-between">
+                            <div className="flex-1">
+                              <p className="text-sm text-zinc-300">{item.category}</p>
+                              <div className="w-full bg-zinc-800 rounded-full h-2 mt-1">
+                                <div
+                                  className="bg-emerald-500 h-2 rounded-full"
+                                  style={{ width: `${(item.spent / Math.max(1, item.budget)) * 100}%` }}
+                                ></div>
+                              </div>
+                            </div>
+                            <div className="text-right ml-4">
+                              <p className="text-sm text-slate-100">₹{item.spent} / ₹{item.budget}</p>
+                              <p className={`text-xs ${remaining > 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                {remaining > 0 ? `₹${remaining} left` : `₹${Math.abs(remaining)} over`}
+                              </p>
+                            </div>
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <p className="text-sm text-zinc-400">No budget/category data</p>
+                    ))}
                   </div>
-                ))}
-              </div>
             </div>
           </div>
 
@@ -354,19 +381,27 @@ const Analytics = () => {
             <div className="bg-gradient-to-br from-neutral-900 via-zinc-900 to-neutral-950 rounded-2xl p-6 shadow-lg border border-zinc-800 text-center">
               <TrendingUpIcon className="w-8 h-8 text-emerald-400 mx-auto mb-2" />
               <h4 className="text-lg font-semibold text-slate-100">Savings Rate</h4>
-              <p className="text-2xl font-bold text-emerald-400">78.5%</p>
-              <p className="text-sm text-zinc-400">+5.2% from last month</p>
+              <p className="text-2xl font-bold text-emerald-400">{loading ? '-' : (summary && typeof summary.savingsRate !== 'undefined' ? `${Math.round(summary.savingsRate*100)/100}%` : '-')}</p>
+              <p className="text-sm text-zinc-400">{loading ? '' : (summary ? (summary.savingsRateChange ? `${summary.savingsRateChange >=0 ? '+' : ''}${Math.round(summary.savingsRateChange*100)/100}% from last month` : '') : '')}</p>
             </div>
             <div className="bg-gradient-to-br from-neutral-900 via-zinc-900 to-neutral-950 rounded-2xl p-6 shadow-lg border border-zinc-800 text-center">
               <Target className="w-8 h-8 text-sky-400 mx-auto mb-2" />
               <h4 className="text-lg font-semibold text-slate-100">Budget Adherence</h4>
-              <p className="text-2xl font-bold text-sky-400">87.3%</p>
-              <p className="text-sm text-zinc-400">4 categories over budget</p>
+              <p className="text-2xl font-bold text-sky-400">{loading ? '-' : (summary && summary.monthlyBudget ? `${Math.round(((summary.totalExpenses||0) / summary.monthlyBudget) * 10000) / 100}%` : '-')}</p>
+              <p className="text-sm text-zinc-400">{loading ? '' : (summary ? `${summary.overBudgetCategories || 0} categories over budget` : '')}</p>
             </div>
             <div className="bg-gradient-to-br from-neutral-900 via-zinc-900 to-neutral-950 rounded-2xl p-6 shadow-lg border border-zinc-800 text-center">
               <Activity className="w-8 h-8 text-violet-400 mx-auto mb-2" />
               <h4 className="text-lg font-semibold text-slate-100">Spending Velocity</h4>
-              <p className="text-2xl font-bold text-violet-400">₹2,450/day</p>
+              <p className="text-2xl font-bold text-violet-400">{loading ? '-' : (() => {
+                try {
+                  const daily = (trends && trends.dailyTrends) || [];
+                  if (!daily.length) return '-';
+                  const sum = daily.reduce((s:any, d:any) => s + (d.totalAmount || 0), 0);
+                  const avg = Math.round((sum / daily.length));
+                  return `₹${avg}/day`;
+                } catch (e) { return '-'; }
+              })()}</p>
               <p className="text-sm text-zinc-400">Average daily spend</p>
             </div>
           </div>

@@ -212,16 +212,37 @@ const Transactions = () => {
       if (startDate) params.append('startDate', startDate);
       if (endDate) params.append('endDate', endDate);
 
-      const response = await fetch(`/api/transactions?${params.toString()}`, {
+      // Ensure we have a token before calling protected API
+      const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+      if (!token) {
+        setError('Not authenticated (missing access token)');
+        setTransactions([]);
+        setTotalPages(1);
+        setTotalTransactions(0);
+        setLoading(false);
+        return;
+      }
+
+      const API_ORIGIN = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+      const response = await fetch(`${API_ORIGIN}/api/transactions?${params.toString()}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+          'Authorization': `Bearer ${token}`,
         },
       });
 
       if (!response.ok) {
-        throw new Error('Failed to fetch transactions');
+        // try to read body for more context
+        let bodyText = '';
+        try {
+          bodyText = await response.text();
+        } catch (e) {
+          bodyText = '<unable to read response body>';
+        }
+        const msg = `Failed to fetch transactions: ${response.status} ${response.statusText} - ${bodyText}`;
+        console.error(msg);
+        throw new Error(msg);
       }
 
       const data: TransactionsResponse = await response.json();
@@ -353,7 +374,7 @@ const Transactions = () => {
           </div>
 
           {/* Counts Strip */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
             <div className="rounded-2xl border border-zinc-800 bg-gradient-to-br from-slate-950 via-slate-900 to-zinc-950 px-4 py-3 shadow-lg">
               <div className="text-xs text-zinc-400 mb-1">Total Transactions</div>
               <p className="text-xl font-semibold text-slate-100">
@@ -372,12 +393,7 @@ const Transactions = () => {
                 {debitCount}
               </p>
             </div>
-            <div className="rounded-2xl border border-zinc-800 bg-gradient-to-br from-slate-950 via-slate-900 to-zinc-950 px-4 py-3 shadow-lg">
-              <div className="text-xs text-zinc-400 mb-1">Pages</div>
-              <p className="text-xl font-semibold text-sky-300">
-                {currentPage} / {totalPages}
-              </p>
-            </div>
+            
           </div>
 
           {/* Amount Stats Strip */}

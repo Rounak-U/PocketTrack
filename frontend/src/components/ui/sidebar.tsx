@@ -5,6 +5,7 @@ import Link, { LinkProps } from "next/link";
 import React, { useState, createContext, useContext } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Menu, X } from "lucide-react";
+import UserAvatar from "./user-avatar";
 
 interface Links {
   label: string;
@@ -100,6 +101,18 @@ export const DesktopSidebar = ({
       {...props}
     >
       {children}
+
+      <div className={cn("mt-auto px-3 py-4 border-t border-gray-800", !open && "flex justify-center") }>
+        <div className={cn("w-full", !open && "flex justify-center") }>
+          {/* show compact avatar when collapsed, full when open */}
+          <div className="hidden md:block">
+            <UserAvatar compact={!open} size={40} />
+          </div>
+          <div className="block md:hidden">
+            <UserAvatar compact={false} size={40} />
+          </div>
+        </div>
+      </div>
     </motion.div>
   );
 };
@@ -146,6 +159,10 @@ export const MobileSidebar = ({
                 <X />
               </div>
               {children}
+
+              <div className="mt-auto pt-6">
+                <UserAvatar compact={false} size={56} />
+              </div>
             </motion.div>
           )}
         </AnimatePresence>

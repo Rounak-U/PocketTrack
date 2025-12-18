@@ -44,6 +44,7 @@ import {
   Key
 } from 'lucide-react';
 import { Sidebar, SidebarBody, SidebarLink, useSidebar } from "@/components/ui/sidebar";
+import UserAvatar from "@/components/ui/user-avatar";
 import { Logo, LogoIcon } from "@/app/dashboard/page";
 import Link from "next/link";
 import { motion } from "framer-motion";
@@ -121,23 +122,7 @@ const SidebarComponent = ({ activeItem, setActiveItem }: { activeItem: string, s
             ))}
           </div>
         </div>
-        <div>
-          <SidebarLink
-            link={{
-              label: "User",
-              href: "/profile",
-              icon: (
-                <Image
-                  src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=32&h=32&fit=crop&crop=face"
-                  className="h-7 w-7 flex-shrink-0 rounded-full"
-                  width={32}
-                  height={32}
-                  alt="Avatar"
-                />
-              ),
-            }}
-          />
-        </div>
+        {/* Footer avatar removed — shared Sidebar renders live avatar/footer */}
       </SidebarBody>
     </Sidebar>
   );
@@ -147,24 +132,104 @@ const Profile = () => {
   const [activeItem, setActiveItem] = useState('profile');
   const [isEditing, setIsEditing] = useState(false);
   const router = useRouter();
-
-  const [userData, setUserData] = useState({
-    name: 'John Doe',
-    email: 'john.doe@example.com',
-    phone: '+91 98765 43210',
-    location: 'Mumbai, India',
-    joinDate: 'January 2024',
-    monthlyBudget: 75000,
-    savingsGoal: 50000,
-    currentSavings: 25000
+  const [userData, setUserData] = useState<any>({
+    name: '',
+    email: '',
+    phone: '',
+    location: '',
+    joinDate: '',
+    monthlyBudget: 0,
+    savingsGoal: 0,
+    currentSavings: 0
   });
 
-  const [editData, setEditData] = useState(userData);
+  const [editData, setEditData] = useState<any>(userData);
+  const [loadingProfile, setLoadingProfile] = useState(true);
+  const [profileError, setProfileError] = useState<string | null>(null);
+
+  const API_ORIGIN = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+
+  // Fetch profile on mount
+  React.useEffect(() => {
+    let mounted = true;
+    (async () => {
+      setLoadingProfile(true);
+      setProfileError(null);
+      const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+      if (!token) {
+        setProfileError('Not authenticated');
+        setLoadingProfile(false);
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API_ORIGIN}/api/users/profile`, {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+        if (!res.ok) {
+          const txt = await res.text();
+          throw new Error(`Failed to fetch profile: ${res.status} ${res.statusText} - ${txt}`);
+        }
+        const json = await res.json();
+        if (!mounted) return;
+        const u = json.user || {};
+        setUserData({
+          name: u.name || '',
+          email: u.email || '',
+          phone: u.phone || '',
+          location: u.location || '',
+          joinDate: u.joinDate || (u.createdAt ? new Date(u.createdAt).toLocaleString() : ''),
+          monthlyBudget: u.monthlyBudget || 0,
+          savingsGoal: u.savingsGoal || 0,
+          currentSavings: u.currentSavings || 0,
+        });
+        setEditData(prev => ({ ...prev, ...(json.user || {}) }));
+      } catch (err: any) {
+        console.error('Fetch profile error:', err);
+        if (mounted) setProfileError(err.message || 'Failed to load profile');
+      } finally {
+        if (mounted) setLoadingProfile(false);
+      }
+    })();
+    return () => { mounted = false; };
+  }, []);
   
 
   const handleSave = () => {
-    setUserData(editData);
-    setIsEditing(false);
+    // Save to backend
+    const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+    if (!token) {
+      setProfileError('Not authenticated');
+      return;
+    }
+
+    (async () => {
+      try {
+        const res = await fetch(`${API_ORIGIN}/api/users/profile`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify(editData),
+        });
+        if (!res.ok) {
+          const txt = await res.text();
+          throw new Error(`Failed to update profile: ${res.status} ${res.statusText} - ${txt}`);
+        }
+        const json = await res.json();
+        setUserData(json.user || editData);
+        setEditData(json.user || editData);
+        setIsEditing(false);
+        setProfileError(null);
+      } catch (err: any) {
+        console.error('Profile update error:', err);
+        setProfileError(err.message || 'Failed to update profile');
+      }
+    })();
   };
 
   const handleCancel = () => {
@@ -181,7 +246,7 @@ const Profile = () => {
     router.push('/login');
   };
 
-  const savingsProgress = (userData.currentSavings / userData.savingsGoal) * 100;
+  const savingsProgress = userData.savingsGoal ? (userData.currentSavings / userData.savingsGoal) * 100 : 0;
 
   const spendingProfile = [
     { label: "Essentials", value: "52%", tone: "text-emerald-300" },
@@ -205,7 +270,23 @@ const Profile = () => {
             <p className="text-sm text-zinc-400">Manage your account, goals, and security in one place.</p>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {loadingProfile ? (
+            <div className="py-24 w-full text-center">
+              <RefreshCw className="w-12 h-12 text-emerald-400 mx-auto animate-spin" />
+              <p className="text-zinc-400 mt-4">Loading profile…</p>
+            </div>
+          ) : profileError ? (
+            <div className="py-24 w-full text-center">
+              <AlertTriangle className="w-12 h-12 text-rose-400 mx-auto" />
+              <p className="text-zinc-400 mt-4">{profileError}</p>
+              <div className="mt-4">
+                <Link href="/login" className="inline-block px-4 py-2 bg-emerald-600 text-white rounded-lg">Go to login</Link>
+              </div>
+            </div>
+          ) : null}
+
+          {!loadingProfile && !profileError && (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Profile Information */}
             <div className="lg:col-span-2 space-y-6">
               {/* Personal Information Card */}
@@ -242,13 +323,7 @@ const Profile = () => {
 
                 <div className="space-y-4">
                   <div className="flex items-center gap-4">
-                    <Image
-                      src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=80&h=80&fit=crop&crop=face"
-                      className="w-20 h-20 rounded-full border-2 border-zinc-700"
-                      width={80}
-                      height={80}
-                      alt="Profile Picture"
-                    />
+                    <UserAvatar compact={false} size={80} />
                     <div>
                       <h3 className="text-lg font-semibold text-slate-100">{userData.name}</h3>
                       <p className="text-zinc-400">Member since {userData.joinDate}</p>
@@ -424,6 +499,7 @@ const Profile = () => {
               </div>
             </div>
           </div>
+          )}
         </div>
       </div>
     </div>
