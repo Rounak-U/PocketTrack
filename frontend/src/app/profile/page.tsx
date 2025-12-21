@@ -43,86 +43,44 @@ import {
   CreditCard,
   Key
 } from 'lucide-react';
-import { Sidebar, SidebarBody, SidebarLink, useSidebar } from "@/components/ui/sidebar";
+import { Sidebar, SidebarBody, SidebarLink } from "@/components/ui/sidebar";
 import UserAvatar from "@/components/ui/user-avatar";
-import { Logo, LogoIcon } from "@/app/dashboard/page";
+import { Logo } from "@/app/dashboard/page";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 
 const SidebarComponent = ({ activeItem, setActiveItem }: { activeItem: string, setActiveItem: (item: string) => void }) => {
-  const LogoWrapper = () => {
-    const { open } = useSidebar();
-    return open ? <Logo /> : <LogoIcon />;
+  const router = useRouter();
+
+  const handleLogout = () => {
+    // Clear tokens from localStorage
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
+    localStorage.removeItem('user');
+    // Redirect to login page
+    router.push('/login');
   };
 
   const links = [
-    {
-      label: "Dashboard",
-      href: "/dashboard",
-      icon: (
-        <Home className="text-white h-5 w-5 flex-shrink-0" />
-      ),
-    },
-    {
-      label: "Upload Statement",
-      href: "/upload",
-      icon: (
-        <Upload className="text-white h-5 w-5 flex-shrink-0" />
-      ),
-    },
-    {
-      label: "Analytics",
-      href: "/analytics",
-      icon: (
-        <BarChart3 className="text-white h-5 w-5 flex-shrink-0" />
-      ),
-    },
-    {
-      label: "Insights",
-      href: "/insights",
-      icon: (
-        <Lightbulb className="text-white h-5 w-5 flex-shrink-0" />
-      ),
-    },
-    {
-      label: "Transactions",
-      href: "/transactions",
-      icon: (
-        <Wallet className="text-white h-5 w-5 flex-shrink-0" />
-      ),
-    },
-    {
-      label: "Profile",
-      href: "/profile",
-      icon: (
-        <Settings className="text-white h-5 w-5 flex-shrink-0" />
-      ),
-    },
-    {
-      label: "Logout",
-      href: "/",
-      icon: (
-        <LogOut className="text-white h-5 w-5 flex-shrink-0" />
-      ),
-    },
+    { label: "Dashboard", href: "/dashboard", icon: <Home className="text-white h-5 w-5 flex-shrink-0" /> },
+    { label: "Upload Statement", href: "/upload", icon: <Upload className="text-white h-5 w-5 flex-shrink-0" /> },
+    { label: "Analytics", href: "/analytics", icon: <BarChart3 className="text-white h-5 w-5 flex-shrink-0" /> },
+    { label: "Insights", href: "/insights", icon: <Lightbulb className="text-white h-5 w-5 flex-shrink-0" /> },
+    { label: "Transactions", href: "/transactions", icon: <Wallet className="text-white h-5 w-5 flex-shrink-0" /> },
+    { label: "Profile", href: "/profile", icon: <Settings className="text-white h-5 w-5 flex-shrink-0" /> },
+    { label: "Logout", href: "/login", icon: <LogOut className="text-white h-5 w-5 flex-shrink-0" />, onClick: handleLogout }
   ];
 
   return (
     <Sidebar>
       <SidebarBody className="justify-between gap-10">
         <div className="flex flex-col flex-1 overflow-y-auto overflow-x-hidden">
-          <div className="flex items-center">
-            <LogoWrapper />
-          </div>
-          <div className="mt-8 flex flex-col gap-2">
-            {links.map((link, idx) => (
-              <SidebarLink key={idx} link={link} />
-            ))}
-          </div>
+          <div className="flex items-center"><Logo /></div>
+          <div className="mt-8 flex flex-col gap-2">{links.map((link, idx) => <SidebarLink key={idx} link={link} />)}</div>
         </div>
-        {/* Footer avatar removed — shared Sidebar renders live avatar/footer */}
+        {/* Logout is now part of the main links list */}
       </SidebarBody>
     </Sidebar>
   );

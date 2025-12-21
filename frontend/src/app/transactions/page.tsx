@@ -33,8 +33,8 @@ import {
   ChevronLeft,
   ChevronRight
 } from 'lucide-react';
-import { Sidebar, SidebarBody, SidebarLink, useSidebar } from "@/components/ui/sidebar";
-import { Logo, LogoIcon } from "@/app/dashboard/page";
+import { Sidebar, SidebarBody, SidebarLink } from "@/components/ui/sidebar";
+import { Logo } from "@/app/dashboard/page";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import Image from "next/image";
@@ -74,93 +74,24 @@ const SidebarComponent = ({ activeItem, setActiveItem }: { activeItem: string, s
     router.push('/login');
   };
 
-  const LogoWrapper = () => {
-    const { open } = useSidebar();
-    return open ? <Logo /> : <LogoIcon />;
-  };
-
   const links = [
-    {
-      label: "Dashboard",
-      href: "/dashboard",
-      icon: (
-        <Home className="text-white h-5 w-5 flex-shrink-0" />
-      ),
-    },
-    {
-      label: "Upload Statement",
-      href: "/upload",
-      icon: (
-        <Upload className="text-white h-5 w-5 flex-shrink-0" />
-      ),
-    },
-    {
-      label: "Analytics",
-      href: "/analytics",
-      icon: (
-        <BarChart3 className="text-white h-5 w-5 flex-shrink-0" />
-      ),
-    },
-    {
-      label: "Insights",
-      href: "/insights",
-      icon: (
-        <Lightbulb className="text-white h-5 w-5 flex-shrink-0" />
-      ),
-    },
-    {
-      label: "Transactions",
-      href: "/transactions",
-      icon: (
-        <Wallet className="text-white h-5 w-5 flex-shrink-0" />
-      ),
-    },
-    {
-      label: "Profile",
-      href: "/profile",
-      icon: (
-        <Settings className="text-white h-5 w-5 flex-shrink-0" />
-      ),
-    },
+    { label: "Dashboard", href: "/dashboard", icon: <Home className="text-white h-5 w-5 flex-shrink-0" /> },
+    { label: "Upload Statement", href: "/upload", icon: <Upload className="text-white h-5 w-5 flex-shrink-0" /> },
+    { label: "Analytics", href: "/analytics", icon: <BarChart3 className="text-white h-5 w-5 flex-shrink-0" /> },
+    { label: "Insights", href: "/insights", icon: <Lightbulb className="text-white h-5 w-5 flex-shrink-0" /> },
+    { label: "Transactions", href: "/transactions", icon: <Wallet className="text-white h-5 w-5 flex-shrink-0" /> },
+    { label: "Profile", href: "/profile", icon: <Settings className="text-white h-5 w-5 flex-shrink-0" /> },
+    { label: "Logout", href: "/login", icon: <LogOut className="text-white h-5 w-5 flex-shrink-0" />, onClick: handleLogout }
   ];
 
   return (
     <Sidebar>
       <SidebarBody className="justify-between gap-10">
         <div className="flex flex-col flex-1 overflow-y-auto overflow-x-hidden">
-          <div className="flex items-center">
-            <LogoWrapper />
-          </div>
-          <div className="mt-8 flex flex-col gap-2">
-            {links.map((link, idx) => (
-              <SidebarLink key={idx} link={link} />
-            ))}
-          </div>
+          <div className="flex items-center"><Logo /></div>
+          <div className="mt-8 flex flex-col gap-2">{links.map((link, idx) => <SidebarLink key={idx} link={link} />)}</div>
         </div>
-        <div>
-          <SidebarLink
-            link={{
-              label: "User",
-              href: "/profile",
-              icon: (
-                <Image
-                  src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=32&h=32&fit=crop&crop=face"
-                  className="h-7 w-7 flex-shrink-0 rounded-full"
-                  width={32}
-                  height={32}
-                  alt="Avatar"
-                />
-              ),
-            }}
-          />
-          <button
-            onClick={handleLogout}
-            className="flex items-center gap-2 w-full px-3 py-2 mt-2 text-sm text-white hover:bg-red-600/20 rounded-lg transition-colors"
-          >
-            <LogOut className="h-4 w-4" />
-            Logout
-          </button>
-        </div>
+        {/* Logout is now part of the main links list */}
       </SidebarBody>
     </Sidebar>
   );

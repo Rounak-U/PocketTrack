@@ -99,7 +99,8 @@ const SidebarComponent = ({ activeItem, setActiveItem }: { activeItem: string, s
     { label: "Analytics", href: "/analytics", icon: <BarChart3 className="text-white h-5 w-5 flex-shrink-0" /> },
     { label: "Insights", href: "/insights", icon: <Lightbulb className="text-white h-5 w-5 flex-shrink-0" /> },
     { label: "Transactions", href: "/transactions", icon: <Wallet className="text-white h-5 w-5 flex-shrink-0" /> },
-    { label: "Profile", href: "/profile", icon: <Settings className="text-white h-5 w-5 flex-shrink-0" /> }
+    { label: "Profile", href: "/profile", icon: <Settings className="text-white h-5 w-5 flex-shrink-0" /> },
+    { label: "Logout", href: "/login", icon: <LogOut className="text-white h-5 w-5 flex-shrink-0" />, onClick: handleLogout }
   ];
 
   return (
@@ -109,11 +110,7 @@ const SidebarComponent = ({ activeItem, setActiveItem }: { activeItem: string, s
           <div className="flex items-center"><Logo /></div>
           <div className="mt-8 flex flex-col gap-2">{links.map((link, idx) => <SidebarLink key={idx} link={link} />)}</div>
         </div>
-        <div>
-          <button onClick={handleLogout} className="flex items-center gap-2 w-full px-3 py-2 mt-2 text-sm text-white hover:bg-red-600/20 rounded-lg transition-colors">
-            <LogOut className="h-4 w-4" /> Logout
-          </button>
-        </div>
+        {/* Logout is now part of the main links list */}
       </SidebarBody>
     </Sidebar>
   );
