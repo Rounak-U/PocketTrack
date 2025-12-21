@@ -31,7 +31,8 @@ import {
   Eye,
   Download,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Receipt
 } from 'lucide-react';
 import { Sidebar, SidebarBody, SidebarLink } from "@/components/ui/sidebar";
 import { Logo } from "@/app/dashboard/page";
@@ -39,6 +40,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
+import { apiFetch, getApiBase } from "@/lib/api";
 
 // Transaction interface
 interface Transaction {
@@ -50,6 +52,12 @@ interface Transaction {
   date: string;
   paymentMethod: string;
   tags: string[];
+  receipt?: {
+    filename: string;
+    originalName: string;
+    path: string;
+    mimeType: string;
+  };
   createdAt: string;
   updatedAt: string;
 }
@@ -143,24 +151,9 @@ const Transactions = () => {
       if (startDate) params.append('startDate', startDate);
       if (endDate) params.append('endDate', endDate);
 
-      // Ensure we have a token before calling protected API
-      const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
-      if (!token) {
-        setError('Not authenticated (missing access token)');
-        setTransactions([]);
-        setTotalPages(1);
-        setTotalTransactions(0);
-        setLoading(false);
-        return;
-      }
-
-      const API_ORIGIN = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-      const response = await fetch(`${API_ORIGIN}/api/transactions?${params.toString()}`, {
+      const API_ORIGIN = getApiBase();
+      const response = await apiFetch(`${API_ORIGIN}/api/transactions?${params.toString()}`, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
       });
 
       if (!response.ok) {
@@ -516,13 +509,21 @@ const Transactions = () => {
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-400">
                               <div className="flex items-center gap-2">
+                                {transaction.receipt && (
+                                  <a
+                                    href={`${getApiBase()}${transaction.receipt.path}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-1 rounded-full border border-zinc-700 bg-zinc-900/70 px-3 py-1 text-xs text-amber-300 hover:bg-zinc-800 transition-colors"
+                                    title="View Receipt"
+                                  >
+                                    <Receipt className="w-3.5 h-3.5" aria-hidden="true" />
+                                    <span>Receipt</span>
+                                  </a>
+                                )}
                                 <button className="inline-flex items-center gap-1 rounded-full border border-zinc-700 bg-zinc-900/70 px-3 py-1 text-xs text-sky-300 hover:bg-zinc-800">
                                   <Eye className="w-3.5 h-3.5" aria-hidden="true" />
                                   <span>View</span>
-                                </button>
-                                <button className="inline-flex items-center gap-1 rounded-full border border-zinc-700 bg-zinc-900/70 px-3 py-1 text-xs text-emerald-300 hover:bg-zinc-800">
-                                  <Download className="w-3.5 h-3.5" aria-hidden="true" />
-                                  <span>Export</span>
                                 </button>
                               </div>
                             </td>

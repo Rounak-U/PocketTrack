@@ -2,11 +2,12 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import ProtectedClient from '@/components/auth/ProtectedClient';
-import { Upload, FileText, CheckCircle, AlertCircle, LogOut, Home, BarChart3, Lightbulb, Settings, Wallet } from 'lucide-react';
+import { Upload, FileText, CheckCircle, AlertCircle, LogOut, Home, BarChart3, Lightbulb, Settings, Wallet, Receipt } from 'lucide-react';
 import { Sidebar, SidebarBody, SidebarLink } from "@/components/ui/sidebar";
 import { Logo } from "@/app/dashboard/page";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { apiFetch, getApiBase } from "@/lib/api";
 
 const SidebarComponent = ({ activeItem, setActiveItem }: { activeItem: string, setActiveItem: (item: string) => void }) => {
   const router = useRouter();
@@ -88,21 +89,71 @@ const UploadPage = () => {
     setProgress(0);
     setUploadStatus('idle');
 
-    // Simulate upload with progress
-    const interval = setInterval(() => {
-      setProgress((prev) => {
-        if (prev >= 100) {
-          clearInterval(interval);
-          setUploading(false);
+    try {
+      const API_BASE = getApiBase();
+      const formData = new FormData();
+      
+      // Determine upload type based on file extension
+      const fileExt = file.name.toLowerCase().split('.').pop() || '';
+      const isReceipt = ['pdf', 'jpg', 'jpeg', 'png', 'webp'].includes(fileExt);
+      const isCSV = fileExt === 'csv';
+      
+      if (isReceipt) {
+        // Upload receipt
+        formData.append('receiptFile', file);
+        
+        const response = await apiFetch(`${API_BASE}/api/upload/receipt`, {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.error || 'Failed to upload receipt');
+        }
+
+        const data = await response.json();
+        
+        if (data.transaction) {
           setUploadStatus('success');
           setTimeout(() => {
             router.push('/dashboard');
-          }, 1000);
-          return 100;
+          }, 1500);
+        } else {
+          // Transaction needs manual confirmation
+          setUploadStatus('success');
+          setTimeout(() => {
+            router.push('/transactions');
+          }, 1500);
         }
-        return prev + 10;
-      });
-    }, 200);
+      } else if (isCSV) {
+        // Upload CSV statement
+        formData.append('csvFile', file);
+        
+        const response = await apiFetch(`${API_BASE}/api/upload/upi-csv`, {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.error || 'Failed to upload CSV file');
+        }
+
+        setUploadStatus('success');
+        setTimeout(() => {
+          router.push('/dashboard');
+        }, 1500);
+      } else {
+        throw new Error('Unsupported file type. Please upload CSV, PDF, or image files.');
+      }
+    } catch (error) {
+      console.error('Upload error:', error);
+      setUploadStatus('error');
+    } finally {
+      setUploading(false);
+      setProgress(100);
+    }
   };
 
   return (
@@ -117,8 +168,8 @@ const UploadPage = () => {
         <div className="flex flex-1">
           <div className="p-4 md:p-8 rounded-tl-2xl border border-zinc-900 bg-black/70 backdrop-blur-sm flex flex-col gap-6 flex-1 w-full h-full overflow-y-auto">
             <div className="mb-6">
-              <h1 className="text-3xl font-semibold text-slate-50 mb-2">Upload Bank Statement</h1>
-              <p className="text-sm text-zinc-400">Upload your bank statement to analyze your spending patterns.</p>
+              <h1 className="text-3xl font-semibold text-slate-50 mb-2">Upload Statement or Receipt</h1>
+              <p className="text-sm text-zinc-400">Upload your bank statement (CSV) or transaction receipt (PDF/Image) to track your expenses.</p>
             </div>
 
             <div className="max-w-2xl mx-auto">
@@ -138,7 +189,7 @@ const UploadPage = () => {
                 <p className="text-sm text-zinc-500 mb-4">or click to browse files</p>
                 <input
                   type="file"
-                  accept=".csv,.pdf,.xlsx"
+                  accept=".csv,.pdf,.jpg,.jpeg,.png,.webp"
                   onChange={handleFileChange}
                   className="hidden"
                   id="file-upload"
@@ -158,50 +209,13 @@ const UploadPage = () => {
               </div>
 
               {file && (
-                <div className="mt-6">
-                  <label className="block text-sm font-medium text-slate-100 mb-2">Statement Month & Year</label>
-                  <div className="flex gap-4 justify-center">
-                    <select
-                      className="px-4 py-2 border border-zinc-700 bg-neutral-950/80 text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-                      value={selectedMonth}
-                      onChange={(e) => setSelectedMonth(e.target.value)}
-                    >
-                      <option value="">Select Month</option>
-                      <option value="January">January</option>
-                      <option value="February">February</option>
-                      <option value="March">March</option>
-                      <option value="April">April</option>
-                      <option value="May">May</option>
-                      <option value="June">June</option>
-                      <option value="July">July</option>
-                      <option value="August">August</option>
-                      <option value="September">September</option>
-                      <option value="October">October</option>
-                      <option value="November">November</option>
-                      <option value="December">December</option>
-                    </select>
-                    <select
-                      className="px-4 py-2 border border-zinc-700 bg-neutral-950/80 text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-                      value={selectedYear}
-                      onChange={(e) => setSelectedYear(e.target.value)}
-                    >
-                      <option value="">Select Year</option>
-                      <option value="2023">2023</option>
-                      <option value="2024">2024</option>
-                      <option value="2025">2025</option>
-                    </select>
-                  </div>
-                </div>
-              )}
-
-              {file && (
                 <div className="mt-6 text-center">
                   <button
                     onClick={handleUpload}
-                    disabled={uploading || !selectedMonth || !selectedYear}
+                    disabled={uploading}
                     className="px-8 py-3 bg-emerald-500 text-white rounded-lg text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {uploading ? 'Uploading...' : 'Upload Statement'}
+                    {uploading ? 'Uploading...' : 'Upload File'}
                   </button>
                   {uploading && (
                     <div className="mt-4 w-full bg-zinc-800 rounded-full h-2">
@@ -238,14 +252,14 @@ const UploadPage = () => {
                   <p className="text-xs text-zinc-500 mt-1">Comma-separated values</p>
                 </div>
                 <div className="rounded-xl p-4 text-center border border-zinc-800 bg-gradient-to-br from-neutral-900 via-zinc-900 to-neutral-950">
-                  <FileText className="w-8 h-8 text-rose-400 mx-auto mb-2" />
-                  <p className="font-medium text-slate-100 text-sm">PDF Files</p>
-                  <p className="text-xs text-zinc-500 mt-1">Portable document format</p>
+                  <Receipt className="w-8 h-8 text-rose-400 mx-auto mb-2" />
+                  <p className="font-medium text-slate-100 text-sm">PDF Receipts</p>
+                  <p className="text-xs text-zinc-500 mt-1">Transaction receipts</p>
                 </div>
                 <div className="rounded-xl p-4 text-center border border-zinc-800 bg-gradient-to-br from-neutral-900 via-zinc-900 to-neutral-950">
-                  <FileText className="w-8 h-8 text-emerald-400 mx-auto mb-2" />
-                  <p className="font-medium text-slate-100 text-sm">Excel Files</p>
-                  <p className="text-xs text-zinc-500 mt-1">Spreadsheet format</p>
+                  <Receipt className="w-8 h-8 text-emerald-400 mx-auto mb-2" />
+                  <p className="font-medium text-slate-100 text-sm">Image Receipts</p>
+                  <p className="text-xs text-zinc-500 mt-1">JPG, PNG, WebP</p>
                 </div>
               </div>
             </div>

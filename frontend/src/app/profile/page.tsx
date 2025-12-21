@@ -50,6 +50,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
+import { apiFetch, getApiBase } from "@/lib/api";
 
 const SidebarComponent = ({ activeItem, setActiveItem }: { activeItem: string, setActiveItem: (item: string) => void }) => {
   const router = useRouter();
@@ -105,28 +106,16 @@ const Profile = () => {
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [profileError, setProfileError] = useState<string | null>(null);
 
-  const API_ORIGIN = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-
   // Fetch profile on mount
   React.useEffect(() => {
     let mounted = true;
     (async () => {
       setLoadingProfile(true);
       setProfileError(null);
-      const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
-      if (!token) {
-        setProfileError('Not authenticated');
-        setLoadingProfile(false);
-        return;
-      }
 
       try {
-        const res = await fetch(`${API_ORIGIN}/api/users/profile`, {
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
-          },
-        });
+        const API_BASE = getApiBase();
+        const res = await apiFetch(`${API_BASE}/api/users/profile`);
         if (!res.ok) {
           const txt = await res.text();
           throw new Error(`Failed to fetch profile: ${res.status} ${res.statusText} - ${txt}`);
@@ -144,7 +133,7 @@ const Profile = () => {
           savingsGoal: u.savingsGoal || 0,
           currentSavings: u.currentSavings || 0,
         });
-        setEditData(prev => ({ ...prev, ...(json.user || {}) }));
+        setEditData((prev: any) => ({ ...prev, ...(json.user || {}) }));
       } catch (err: any) {
         console.error('Fetch profile error:', err);
         if (mounted) setProfileError(err.message || 'Failed to load profile');
@@ -158,20 +147,11 @@ const Profile = () => {
 
   const handleSave = () => {
     // Save to backend
-    const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
-    if (!token) {
-      setProfileError('Not authenticated');
-      return;
-    }
-
     (async () => {
       try {
-        const res = await fetch(`${API_ORIGIN}/api/users/profile`, {
+        const API_BASE = getApiBase();
+        const res = await apiFetch(`${API_BASE}/api/users/profile`, {
           method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
-          },
           body: JSON.stringify(editData),
         });
         if (!res.ok) {

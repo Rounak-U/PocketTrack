@@ -22,6 +22,7 @@ import { Logo } from "@/app/dashboard/page";
 import Link from 'next/link';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
+import { apiFetch, getApiBase } from "@/lib/api";
 
 type Insight = {
   id: string;
@@ -89,18 +90,14 @@ const InsightsPage: React.FC = () => {
       setLoading(true);
       setError(null);
 
-      const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
-      const headers: Record<string,string> = { 'Content-Type': 'application/json' };
-      if (token) headers['Authorization'] = `Bearer ${token}`;
-
-      const API_ORIGIN = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+      const API_ORIGIN = getApiBase();
 
       try {
         const [summaryRes, categoriesRes, trendsRes, monthlyRes] = await Promise.all([
-          fetch(`${API_ORIGIN}/api/analytics/summary`, { headers }),
-          fetch(`${API_ORIGIN}/api/analytics/categories`, { headers }),
-          fetch(`${API_ORIGIN}/api/analytics/trends`, { headers }),
-          fetch(`${API_ORIGIN}/api/analytics/monthly`, { headers })
+          apiFetch(`${API_ORIGIN}/api/analytics/summary`),
+          apiFetch(`${API_ORIGIN}/api/analytics/categories`),
+          apiFetch(`${API_ORIGIN}/api/analytics/trends`),
+          apiFetch(`${API_ORIGIN}/api/analytics/monthly`)
         ]);
 
         if (!summaryRes.ok && !categoriesRes.ok && !trendsRes.ok) {

@@ -1,8 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-
-const API_ORIGIN = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+import { apiFetch, getApiBase } from "@/lib/api";
 
 export default function UserAvatar({
 	compact = false,
@@ -37,9 +36,8 @@ export default function UserAvatar({
 		setLoading(true);
 		(async () => {
 			try {
-				const res = await fetch(`${API_ORIGIN}/api/users/profile`, {
-					headers: { Authorization: `Bearer ${token}` },
-				});
+				const API_BASE = getApiBase();
+				const res = await apiFetch(`${API_BASE}/api/users/profile`);
 				if (!res.ok) return;
 				const data = await res.json();
 				if (!cancelled && data?.user) {

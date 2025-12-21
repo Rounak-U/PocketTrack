@@ -31,6 +31,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
+import { apiFetch, getApiBase } from "@/lib/api";
 
 // Mock data
 const monthlyTrendData = [
@@ -117,17 +118,14 @@ const Analytics = () => {
       try {
         setLoading(true);
         setError(null);
-        const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
-        const API_BASE = (process.env.NEXT_PUBLIC_API_URL) ? process.env.NEXT_PUBLIC_API_URL : 'http://localhost:5000';
-
-        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+        const API_BASE = getApiBase();
 
         // Fetch multiple endpoints in parallel
         const [monthlyRes, categoriesRes, trendsRes, summaryRes] = await Promise.all([
-          fetch(`${API_BASE}/api/analytics/monthly`, { headers }),
-          fetch(`${API_BASE}/api/analytics/categories`, { headers }),
-          fetch(`${API_BASE}/api/analytics/trends`, { headers }),
-          fetch(`${API_BASE}/api/analytics/summary`, { headers })
+          apiFetch(`${API_BASE}/api/analytics/monthly`),
+          apiFetch(`${API_BASE}/api/analytics/categories`),
+          apiFetch(`${API_BASE}/api/analytics/trends`),
+          apiFetch(`${API_BASE}/api/analytics/summary`)
         ]);
 
         // Handle any non-ok responses

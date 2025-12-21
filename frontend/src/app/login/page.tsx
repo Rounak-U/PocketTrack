@@ -99,7 +99,7 @@ export default function LoginPage() {
       router.push("/dashboard");
     } catch (error) {
       console.error('Login error:', error);
-      showError("Login Failed", error.message);
+      showError("Login Failed", error instanceof Error ? error.message : 'Login failed. Please try again.');
     }
   };
 

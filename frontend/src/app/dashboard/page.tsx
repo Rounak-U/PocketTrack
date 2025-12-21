@@ -23,7 +23,8 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   AlertTriangle,
-  RefreshCw
+  RefreshCw,
+  Receipt
 } from 'lucide-react';
 import { PieChart as RechartsPieChart, Pie, Cell, ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, BarChart, Bar } from 'recharts';
 import { Sidebar, SidebarBody, SidebarLink } from "@/components/ui/sidebar";
@@ -31,6 +32,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
+import { apiFetch, getApiBase } from "@/lib/api";
 
 // UI state defaults
 const defaultSummary = {
@@ -145,12 +147,8 @@ const Dashboard = () => {
         setLoading(true);
         setError(null);
 
-        const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
-        const API_BASE = (process.env.NEXT_PUBLIC_API_URL) ? process.env.NEXT_PUBLIC_API_URL : 'http://localhost:5000';
-
-        const res = await fetch(`${API_BASE}/api/dashboard/summary`, {
-          headers: token ? { 'Authorization': `Bearer ${token}` } : {}
-        });
+        const API_BASE = getApiBase();
+        const res = await apiFetch(`${API_BASE}/api/dashboard/summary`);
 
         if (!res.ok) {
           const body = await res.json().catch(() => ({}));
@@ -205,7 +203,7 @@ const Dashboard = () => {
                 <thead>
                   <tr>
                     <th className="text-left py-3 px-4 font-medium text-zinc-400 text-xs uppercase tracking-wide">Date</th>
-                    <th className="text-left py-3 px-4 font-medium text-zinc-400 text-xs uppercase tracking-wide">Merchant</th>
+                    <th className="text-left py-3 px-4 font-medium text-zinc-400 text-xs uppercase tracking-wide">Merchant / Receipt</th>
                     <th className="text-left py-3 px-4 font-medium text-zinc-400 text-xs uppercase tracking-wide">Category</th>
                     <th className="text-right py-3 px-4 font-medium text-zinc-400 text-xs uppercase tracking-wide">Amount</th>
                   </tr>
@@ -227,9 +225,24 @@ const Dashboard = () => {
                     </tr>
                   )}
                   {!loading && !error && recentTransactionsState.map((transaction: any, index: number) => (
-                    <tr key={index} className="border-b border-zinc-900 last:border-0">
+                    <tr key={index} className="border-b border-zinc-900 last:border-0 hover:bg-zinc-900/30 transition-colors">
                       <td className="py-3 px-4 text-sm text-slate-200">{new Date(transaction.date).toLocaleDateString()}</td>
-                      <td className="py-3 px-4 text-sm text-slate-200">{transaction.merchant || transaction.description || '—'}</td>
+                      <td className="py-3 px-4 text-sm text-slate-200">
+                        <div className="flex items-center gap-2">
+                          {transaction.merchant || transaction.description || '—'}
+                          {transaction.receipt && (
+                            <a
+                              href={`${getApiBase()}${transaction.receipt.path}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center text-amber-400 hover:text-amber-300 transition-colors"
+                              title="View Receipt"
+                            >
+                              <Receipt className="w-4 h-4" />
+                            </a>
+                          )}
+                        </div>
+                      </td>
                       <td className="py-3 px-4 text-sm text-zinc-400">{transaction.category}</td>
                       <td className={`py-3 px-4 text-right font-medium ${transaction.type === 'income' ? 'text-emerald-400' : 'text-rose-400'}`}>{transaction.type === 'income' ? '+' : '-'}₹{Math.abs(transaction.amount)}</td>
                     </tr>

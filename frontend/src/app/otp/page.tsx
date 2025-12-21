@@ -7,7 +7,7 @@ import { useNotifications } from "@/components/ui/notification-context";
 export default function OTPPage() {
   const [otp, setOtp] = useState("");
   const [loading, setLoading] = useState(false);
-  const [pendingData, setPendingData] = useState(null);
+  const [pendingData, setPendingData] = useState<Record<string, any> | null>(null);
   const router = useRouter();
   const { showSuccess, showError } = useNotifications();
 
@@ -32,7 +32,7 @@ export default function OTPPage() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ otp, ...pendingData }),
+        body: JSON.stringify({ otp, ...(pendingData || {}) }),
       });
 
       if (!res.ok) {
@@ -54,7 +54,7 @@ export default function OTPPage() {
       router.push("/dashboard");
     } catch (error) {
       console.error('OTP verification error:', error);
-      showError("Verification Failed", error.message);
+      showError("Verification Failed", error instanceof Error ? error.message : 'OTP verification failed. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -78,7 +78,7 @@ export default function OTPPage() {
 
       showSuccess("OTP Resent", "Check your email for the new code");
     } catch (error) {
-      showError("Resend Failed", error.message);
+      showError("Resend Failed", error instanceof Error ? error.message : 'Failed to resend OTP. Please try again.');
     }
   };
 

@@ -43,7 +43,7 @@ export default function SignupPage() {
       localStorage.setItem('otpMode', 'true');
     } catch (error) {
       console.error('Registration error:', error);
-      showError("Registration Failed", error.message);
+      showError("Registration Failed", error instanceof Error ? error.message : 'Registration failed. Please try again.');
     }
   };
 
@@ -107,7 +107,7 @@ export default function SignupPage() {
             router.push('/dashboard');
           } catch (err) {
             console.error('OTP verify error', err);
-            showError('OTP Verification Failed', err.message);
+            showError('OTP Verification Failed', err instanceof Error ? err.message : 'OTP verification failed. Please try again.');
           }
         }}
         onResendOtp={async () => {
@@ -136,7 +136,7 @@ export default function SignupPage() {
             showSuccess('OTP Resent', 'Check your email');
           } catch (err) {
             console.error('Resend failed', err);
-            showError('Resend Failed', err.message);
+            showError('Resend Failed', err instanceof Error ? err.message : 'Failed to resend OTP. Please try again.');
           }
         }}
         onGoogleSignIn={handleGoogleSignIn}
