@@ -161,7 +161,7 @@ export function OTPVerification({
             </p>
           </div>
 
-          <div className="flex justify-center gap-1.5 sm:gap-3 md:gap-4 mb-6 sm:mb-8">
+          <div className="flex justify-center gap-2 sm:gap-3 md:gap-4 mb-6 sm:mb-8">
             {otp.map((digit, index) => (
               <div key={index} className="relative">
                 <input
@@ -174,7 +174,7 @@ export function OTPVerification({
                   value={digit}
                   onChange={(e) => handleChange(index, e.target.value)}
                   onKeyDown={(e) => handleKeyDown(index, e)}
-                  className="w-8 h-8 sm:w-11 sm:h-11 md:w-12 md:h-12 text-center text-xs sm:text-base md:text-lg font-medium bg-white/5 border-white/15 text-white placeholder-white/40 focus:bg-white/10 focus:border-emerald-300/70 focus:outline-none transition-all duration-200 border shadow-lg opacity-100 rounded-2xl"
+                  className="w-9 h-9 sm:w-11 sm:h-11 md:w-12 md:h-12 text-center text-xs sm:text-base md:text-lg font-medium bg-white/5 border-white/15 text-white placeholder-white/40 focus:bg-white/10 focus:border-emerald-300/70 focus:outline-none transition-all duration-200 border shadow-lg opacity-100 rounded-2xl"
                   placeholder=""
                 />
               </div>
