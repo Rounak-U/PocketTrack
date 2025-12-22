@@ -174,7 +174,7 @@ export function OTPVerification({
                   value={digit}
                   onChange={(e) => handleChange(index, e.target.value)}
                   onKeyDown={(e) => handleKeyDown(index, e)}
-                  className="w-9 h-9 sm:w-11 sm:h-11 md:w-12 md:h-12 text-center text-xs sm:text-base md:text-lg font-medium bg-white/5 border-white/15 text-white placeholder-white/40 focus:bg-white/10 focus:border-emerald-300/70 focus:outline-none transition-all duration-200 border shadow-lg opacity-100 rounded-2xl"
+                  className="w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 text-center text-sm sm:text-base md:text-lg font-medium bg-white/5 border-white/15 text-white placeholder-white/40 focus:bg-white/10 focus:border-emerald-300/70 focus:outline-none transition-all duration-200 border shadow-lg opacity-100 rounded-2xl"
                   placeholder=""
                 />
               </div>
