@@ -131,8 +131,8 @@ export function OTPVerification({
   };
 
   return (
-    <div className="h-[100dvh] w-full flex items-center justify-center bg-black p-4 overflow-hidden">
-      <div className="relative w-full max-w-md max-h-[88vh] overflow-hidden rounded-3xl shadow-2xl">
+    <div className="min-h-[100dvh] w-full flex items-center justify-center bg-black px-4 py-6 sm:p-6 overflow-hidden">
+      <div className="relative w-full max-w-sm sm:max-w-md max-h-[92vh] overflow-hidden rounded-3xl shadow-2xl">
         <div className="absolute inset-0 z-0">
           <img
             src="https://images.unsplash.com/photo-1520607162513-77705c0f0d4a?w=1200&q=80&auto=format&fit=crop"
@@ -142,13 +142,15 @@ export function OTPVerification({
           <div className="absolute inset-0 bg-gradient-to-b from-emerald-500/80 via-emerald-700/90 to-black/95" />
         </div>
 
-        <div className="relative z-10 p-6 md:p-8 py-12 md:py-14">
-          <div className="text-center mb-8">
-            <div className="w-8 h-8 mx-auto mb-6 text-white flex items-center justify-center">
+        <div className="relative z-10 px-5 py-8 sm:p-6 sm:py-10 md:p-8 md:py-14">
+          <div className="text-center mb-6 sm:mb-8">
+            <div className="w-8 h-8 mx-auto mb-4 sm:mb-6 text-white flex items-center justify-center">
               <Zap className="w-full h-full" />
             </div>
-            <h1 className="text-2xl font-semibold text-white mb-3">Enter verification code</h1>
-            <p className="text-white/70 text-sm leading-relaxed">
+            <h1 className="text-xl sm:text-2xl font-semibold text-white mb-2 sm:mb-3">
+              Enter verification code
+            </h1>
+            <p className="text-white/70 text-xs sm:text-sm leading-relaxed">
               We emailed you a verification code
               {email && (
                 <>
@@ -159,7 +161,7 @@ export function OTPVerification({
             </p>
           </div>
 
-          <div className="flex justify-center gap-4 mb-8">
+          <div className="flex justify-center gap-1.5 sm:gap-3 md:gap-4 mb-6 sm:mb-8">
             {otp.map((digit, index) => (
               <div key={index} className="relative">
                 <input
@@ -172,7 +174,7 @@ export function OTPVerification({
                   value={digit}
                   onChange={(e) => handleChange(index, e.target.value)}
                   onKeyDown={(e) => handleKeyDown(index, e)}
-                  className="w-12 h-12 text-center text-lg font-medium bg-white/5 border-white/15 text-white placeholder-white/40 focus:bg-white/10 focus:border-emerald-300/70 focus:outline-none transition-all duration-200 border shadow-lg opacity-100 rounded-2xl"
+                  className="w-8 h-8 sm:w-11 sm:h-11 md:w-12 md:h-12 text-center text-xs sm:text-base md:text-lg font-medium bg-white/5 border-white/15 text-white placeholder-white/40 focus:bg-white/10 focus:border-emerald-300/70 focus:outline-none transition-all duration-200 border shadow-lg opacity-100 rounded-2xl"
                   placeholder=""
                 />
               </div>
