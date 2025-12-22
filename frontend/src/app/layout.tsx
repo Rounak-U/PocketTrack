@@ -1,18 +1,13 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
 import { Logo } from "@/components/ui/logo";
 import { NotificationProvider } from "@/components/ui/notification-context";
 import { NotificationContainer } from "@/components/ui/notification-container";
+import { FontLoader } from "@/components/FontLoader";
 import "./globals.css";
-
-const inter = Inter({
-  variable: "--font-inter",
-  subsets: ["latin"],
-});
 
 export const metadata: Metadata = {
   title: "PocketTrack | Track Every Rupee",
-  description: "Analyze your UPI spending, visualize expenses, and build smarter money habits with PocketTrack.",
+  description: "Analyze your UPI spending, visualize expenses, and build smarter money habits with PocketTrack",
 };
 
 export default function RootLayout({
@@ -23,8 +18,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${inter.variable} antialiased`}
+        className="antialiased"
+        style={{ fontFamily: 'Inter, sans-serif' }}
       >
+        <FontLoader />
         <NotificationProvider>
           <Logo />
           {children}

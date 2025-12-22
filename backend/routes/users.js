@@ -103,4 +103,47 @@ router.put('/change-password', authMiddleware, async (req, res) => {
   }
 });
 
+// @route   DELETE /api/users/account
+// @desc    Delete user account and all associated data
+// @access  Private
+router.delete('/account', authMiddleware, async (req, res) => {
+  try {
+    const { confirmationText } = req.body;
+    const userId = req.user?.userId || req.user?.id || req.user?._id;
+    
+    if (!userId) {
+      return res.status(401).json({ error: 'Invalid token payload' });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // GitHub-like confirmation: user must type their email to confirm deletion
+    if (!confirmationText || confirmationText.trim() !== user.email) {
+      return res.status(400).json({ 
+        error: 'Please type your email address to confirm account deletion',
+        requiresEmail: true
+      });
+    }
+
+    // Import Transaction model (lazy import to avoid circular dependencies)
+    const Transaction = require('../models/Transaction');
+    
+    // Delete all user's transactions
+    await Transaction.deleteMany({ user: userId });
+    
+    // Delete user account
+    await User.findByIdAndDelete(userId);
+
+    res.json({ 
+      message: 'Account and all associated data deleted successfully'
+    });
+  } catch (error) {
+    console.error('Delete account error:', error);
+    res.status(500).json({ error: 'Server error deleting account' });
+  }
+});
+
 module.exports = router;

@@ -15,18 +15,23 @@ router.get('/summary', authMiddleware, async (req, res) => {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    // Get current month date range
+    // Get current month date range for metrics calculation
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
 
-    // Query transactions for current month
+    // Query transactions for current month (for metrics)
     const monthlyTransactions = await Transaction.find({
       user: req.user.userId,
       date: { $gte: startOfMonth, $lte: endOfMonth }
     }).sort({ date: -1 });
 
-    // Calculate metrics
+    // Get ALL transactions for recent transactions list (sorted by date, newest first)
+    const allTransactions = await Transaction.find({
+      user: req.user.userId
+    }).sort({ date: -1 });
+
+    // Calculate metrics (using monthly transactions)
     const totalSpend = monthlyTransactions
       .filter(t => t.type === 'expense')
       .reduce((sum, t) => sum + t.amount, 0);
@@ -37,7 +42,7 @@ router.get('/summary', authMiddleware, async (req, res) => {
 
     const transactionCount = monthlyTransactions.length;
 
-    // Calculate top category
+    // Calculate top category (using monthly transactions)
     const categorySpending = {};
     monthlyTransactions
       .filter(t => t.type === 'expense')
@@ -49,16 +54,16 @@ router.get('/summary', authMiddleware, async (req, res) => {
     const topCategory = Object.entries(categorySpending)
       .sort(([,a], [,b]) => b - a)[0]?.[0] || 'None';
 
-    // Calculate savings rate
+    // Calculate savings rate (only if budget is set)
     const savingsRate = user.monthlyBudget > 0 ?
-      Math.max(0, ((user.monthlyBudget - totalSpend) / user.monthlyBudget) * 100) : 0;
+      Math.max(0, ((user.monthlyBudget - totalSpend) / user.monthlyBudget) * 100) : null;
 
-    // Get recent transactions (last 5)
-    const recentTransactions = monthlyTransactions.slice(0, 5);
+    // Get all transactions for display (sorted by date, newest first)
+    const recentTransactions = allTransactions;
 
-    // Calculate budget progress
+    // Calculate budget progress (only if budget is set)
     const budgetProgress = user.monthlyBudget > 0 ?
-      Math.min(100, (totalSpend / user.monthlyBudget) * 100) : 0;
+      Math.min(100, (totalSpend / user.monthlyBudget) * 100) : null;
 
     res.json({
       summary: {

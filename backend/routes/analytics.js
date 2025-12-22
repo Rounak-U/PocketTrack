@@ -401,7 +401,7 @@ router.get('/summary', authMiddleware, async (req, res) => {
       .filter(t => t.type === 'expense')
       .reduce((sum, t) => sum + t.amount, 0);
 
-    const savingsRate = user.monthlyBudget > 0 ? ((user.monthlyBudget - totalExpenses) / user.monthlyBudget) * 100 : 0;
+    const savingsRate = user.monthlyBudget > 0 ? ((user.monthlyBudget - totalExpenses) / user.monthlyBudget) * 100 : null;
 
     res.json({
       summary: {

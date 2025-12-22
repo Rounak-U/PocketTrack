@@ -32,11 +32,11 @@ const userSchema = new mongoose.Schema({
   },
   monthlyBudget: {
     type: Number,
-    default: 50000
+    default: 0
   },
   savingsGoal: {
     type: Number,
-    default: 100000
+    default: 0
   },
   currentSavings: {
     type: Number,
