@@ -9,14 +9,8 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  // Disable Turbopack for font loading to avoid module resolution issues
-  experimental: {
-    turbo: {
-      resolveAlias: {
-        // Fallback for font loading
-      },
-    },
-  },
+  // Experimental config removed - turbo key is not valid in Next.js 16
+  // Font loading is handled via Metadata API in layout.tsx
 };
 
 export default nextConfig;
