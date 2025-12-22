@@ -90,9 +90,10 @@ const SidebarComponent = ({ activeItem, setActiveItem }: { activeItem: string, s
   const router = useRouter();
 
   const handleLogout = () => {
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
-    localStorage.removeItem('user');
+    // Clear all auth and app state from localStorage on logout
+    if (typeof window !== "undefined") {
+      localStorage.clear();
+    }
     router.push('/login');
   };
 

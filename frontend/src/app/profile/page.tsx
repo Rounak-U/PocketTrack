@@ -56,10 +56,10 @@ const SidebarComponent = ({ activeItem, setActiveItem }: { activeItem: string, s
   const router = useRouter();
 
   const handleLogout = () => {
-    // Clear tokens from localStorage
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
-    localStorage.removeItem('user');
+    // Clear all auth and app state from localStorage on logout
+    if (typeof window !== "undefined") {
+      localStorage.clear();
+    }
     // Redirect to login page
     router.push('/login');
   };
@@ -342,10 +342,10 @@ const Profile = () => {
   };
 
   const handleLogout = () => {
-    // Clear tokens from localStorage
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
-    localStorage.removeItem('user');
+    // Clear all auth and app state from localStorage on logout
+    if (typeof window !== "undefined") {
+      localStorage.clear();
+    }
     // Redirect to login page
     router.push('/login');
   };
@@ -391,10 +391,10 @@ const Profile = () => {
         throw new Error(errorData.error || 'Failed to delete account');
       }
 
-      // Account deleted successfully, clear local storage and redirect
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
-      localStorage.removeItem('user');
+      // Account deleted successfully, clear all localStorage and redirect
+      if (typeof window !== "undefined") {
+        localStorage.clear();
+      }
       
       // Redirect to login page with a message
       router.push('/login?deleted=true');
