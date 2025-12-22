@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Eye, EyeOff, ArrowLeft } from 'lucide-react';
+import { OTPVerification } from './otp-verify';
 
 // --- HELPER COMPONENTS (ICONS) ---
 
@@ -35,6 +36,12 @@ interface SignInPageProps {
   otpMode?: boolean;
   onVerifyOtp?: (event: React.FormEvent<HTMLFormElement>) => void;
   onResendOtp?: () => void;
+  /** When using OTP UI instead of the inline input, handle verification */
+  onVerifyOtpCode?: (code: string) => Promise<void> | void;
+  /** When using OTP UI instead of the inline input, handle resend */
+  onResendOtpCode?: () => Promise<void> | void;
+  /** Email to show in OTP UI */
+  otpEmail?: string;
 }
 
 // --- SUB-COMPONENTS ---
@@ -71,11 +78,14 @@ export const SignInPage: React.FC<SignInPageProps> = ({
   otpMode = false,
   onVerifyOtp = (e: React.FormEvent<HTMLFormElement>) => { e.preventDefault(); },
   onResendOtp = () => {},
+  onVerifyOtpCode,
+  onResendOtpCode,
+  otpEmail,
 }) => {
   const [showPassword, setShowPassword] = useState(false);
 
   return (
-    <div className="h-[100dvh] flex flex-col md:flex-row font-sans w-[100dvw] bg-black text-white">
+    <div className="h-[100dvh] flex flex-col md:flex-row font-sans w-[100dvw] bg-black text-white overflow-hidden">
       {/* Left column: hero image + testimonials */}
       {heroImageSrc && (
         <section className="flex-1 relative p-4">
@@ -103,77 +113,78 @@ export const SignInPage: React.FC<SignInPageProps> = ({
               Back to Home
             </button>
 
-            <h1 className="animate-element animate-delay-100 text-2xl md:text-3xl font-semibold leading-tight text-white">{title}</h1>
-            <p className="animate-element animate-delay-200 text-gray-400 text-xs md:text-sm">{description}</p>
-
-            <form className="space-y-3 md:space-y-5" onSubmit={otpMode ? onVerifyOtp : onSignIn} suppressHydrationWarning>
-              <div className="animate-element animate-delay-300">
-                <label className="text-xs md:text-sm font-medium text-gray-400">Email Address</label>
-                <GlassInputWrapper>
-                  <input name="email" type="email" placeholder="Enter your email address" className="w-full bg-transparent text-sm p-3 md:p-4 rounded-2xl focus:outline-none" suppressHydrationWarning />
-                </GlassInputWrapper>
+            {otpMode ? (
+              <div className="animate-element animate-delay-200">
+                <OTPVerification
+                  digits={6}
+                  email={otpEmail}
+                  onVerify={(code) => onVerifyOtpCode?.(code)}
+                  onResend={() => onResendOtpCode?.()}
+                />
               </div>
-              {!otpMode && isSignUp && (
-                <div className="animate-element animate-delay-350">
-                  <label className="text-xs md:text-sm font-medium text-gray-400">Full Name</label>
-                  <GlassInputWrapper>
-                    <input name="name" type="text" placeholder="Enter your full name" className="w-full bg-transparent text-sm p-3 md:p-4 rounded-2xl focus:outline-none" suppressHydrationWarning />
-                  </GlassInputWrapper>
-                </div>
-              )}
+            ) : (
+              <>
+                <h1 className="animate-element animate-delay-100 text-2xl md:text-3xl font-semibold leading-tight text-white">{title}</h1>
+                <p className="animate-element animate-delay-200 text-gray-400 text-xs md:text-sm">{description}</p>
 
-              {!otpMode && (
-                <div className="animate-element animate-delay-400">
-                  <label className="text-xs md:text-sm font-medium text-gray-400">Password</label>
-                  <GlassInputWrapper>
-                    <div className="relative">
-                      <input name="password" type={showPassword ? 'text' : 'password'} placeholder="Enter your password" className="w-full bg-transparent text-sm p-3 md:p-4 pr-12 rounded-2xl focus:outline-none" suppressHydrationWarning />
-                      <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute inset-y-0 right-3 flex items-center">
-                        {showPassword ? <EyeOff className="w-5 h-5 text-muted-foreground hover:text-foreground transition-colors" /> : <Eye className="w-5 h-5 text-muted-foreground hover:text-foreground transition-colors" />}
-                      </button>
-                    </div>
-                  </GlassInputWrapper>
-                </div>
-              )}
-
-              {otpMode && (
-                <div className="animate-element animate-delay-350">
-                  <label className="text-xs md:text-sm font-medium text-gray-400">OTP Code</label>
-                  <GlassInputWrapper>
-                    <input name="otp" type="text" placeholder="Enter 6-digit code" className="w-full bg-transparent text-sm p-3 md:p-4 rounded-2xl focus:outline-none" maxLength={6} />
-                  </GlassInputWrapper>
-                  <div className="mt-2 flex justify-between items-center">
-                    <button type="button" onClick={onResendOtp} className="text-sm text-violet-400 hover:underline">Didn't receive code? Resend</button>
+                <form className="space-y-3 md:space-y-5" onSubmit={otpMode ? onVerifyOtp : onSignIn} suppressHydrationWarning>
+                  <div className="animate-element animate-delay-300">
+                    <label className="text-xs md:text-sm font-medium text-gray-400">Email Address</label>
+                    <GlassInputWrapper>
+                      <input name="email" type="email" placeholder="Enter your email address" className="w-full bg-transparent text-sm p-3 md:p-4 rounded-2xl focus:outline-none" suppressHydrationWarning />
+                    </GlassInputWrapper>
                   </div>
+                  {!otpMode && isSignUp && (
+                    <div className="animate-element animate-delay-350">
+                      <label className="text-xs md:text-sm font-medium text-gray-400">Full Name</label>
+                      <GlassInputWrapper>
+                        <input name="name" type="text" placeholder="Enter your full name" className="w-full bg-transparent text-sm p-3 md:p-4 rounded-2xl focus:outline-none" suppressHydrationWarning />
+                      </GlassInputWrapper>
+                    </div>
+                  )}
+
+                  {!otpMode && (
+                    <div className="animate-element animate-delay-400">
+                      <label className="text-xs md:text-sm font-medium text-gray-400">Password</label>
+                      <GlassInputWrapper>
+                        <div className="relative">
+                          <input name="password" type={showPassword ? 'text' : 'password'} placeholder="Enter your password" className="w-full bg-transparent text-sm p-3 md:p-4 pr-12 rounded-2xl focus:outline-none" suppressHydrationWarning />
+                          <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute inset-y-0 right-3 flex items-center">
+                            {showPassword ? <EyeOff className="w-5 h-5 text-muted-foreground hover:text-foreground transition-colors" /> : <Eye className="w-5 h-5 text-muted-foreground hover:text-foreground transition-colors" />}
+                          </button>
+                        </div>
+                      </GlassInputWrapper>
+                    </div>
+                  )}
+
+                  <div className="animate-element animate-delay-500 flex items-center justify-between text-sm">
+                    <label className="flex items-center gap-3 cursor-pointer">
+                      <input type="checkbox" name="rememberMe" className="custom-checkbox" />
+                      <span className="text-white">Keep me signed in</span>
+                    </label>
+                    <a href="#" onClick={(e) => { e.preventDefault(); onResetPassword?.(); }} className="hover:underline text-violet-400 transition-colors">Reset password</a>
+                  </div>
+
+                  <button type="submit" className="animate-element animate-delay-600 w-full rounded-2xl bg-green-600 py-3 md:py-4 font-medium text-white hover:bg-green-700 transition-colors text-sm">
+                    {isSignUp ? "Create Account" : "Sign In"}
+                  </button>
+                </form>
+
+                <div className="animate-element animate-delay-700 flex flex-col items-center gap-2">
+                  <span className="w-full border-t border-gray-600"></span>
+                  <span className="text-gray-400">Or continue with</span>
                 </div>
-              )}
 
-              <div className="animate-element animate-delay-500 flex items-center justify-between text-sm">
-                <label className="flex items-center gap-3 cursor-pointer">
-                  <input type="checkbox" name="rememberMe" className="custom-checkbox" />
-                  <span className="text-white">Keep me signed in</span>
-                </label>
-                <a href="#" onClick={(e) => { e.preventDefault(); onResetPassword?.(); }} className="hover:underline text-violet-400 transition-colors">Reset password</a>
-              </div>
+                <button onClick={onGoogleSignIn} className="animate-element animate-delay-800 w-full flex items-center justify-center gap-3 border border-gray-600 rounded-2xl py-3 md:py-4 hover:bg-gray-800 transition-colors text-sm">
+                    <GoogleIcon />
+                    Continue with Google
+                </button>
 
-              <button type="submit" className="animate-element animate-delay-600 w-full rounded-2xl bg-green-600 py-3 md:py-4 font-medium text-white hover:bg-green-700 transition-colors text-sm">
-                {otpMode ? "Verify OTP" : (isSignUp ? "Create Account" : "Sign In")}
-              </button>
-            </form>
-
-            <div className="animate-element animate-delay-700 flex flex-col items-center gap-2">
-              <span className="w-full border-t border-gray-600"></span>
-              <span className="text-gray-400">Or continue with</span>
-            </div>
-
-            <button onClick={onGoogleSignIn} className="animate-element animate-delay-800 w-full flex items-center justify-center gap-3 border border-gray-600 rounded-2xl py-3 md:py-4 hover:bg-gray-800 transition-colors text-sm">
-                <GoogleIcon />
-                Continue with Google
-            </button>
-
-            <p className="animate-element animate-delay-900 text-center text-sm text-gray-400">
-              {isSignUp ? "Already have an account?" : "New to our platform?"} <a href="#" onClick={(e) => { e.preventDefault(); onCreateAccount?.(); }} className="text-violet-400 hover:underline transition-colors">{isSignUp ? "Sign In" : "Create Account"}</a>
-            </p>
+                <p className="animate-element animate-delay-900 text-center text-sm text-gray-400">
+                  {isSignUp ? "Already have an account?" : "New to our platform?"} <a href="#" onClick={(e) => { e.preventDefault(); onCreateAccount?.(); }} className="text-violet-400 hover:underline transition-colors">{isSignUp ? "Sign In" : "Create Account"}</a>
+                </p>
+              </>
+            )}
           </div>
         </div>
       </section>

@@ -12,25 +12,8 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Middleware
-// Configure CORS to allow both local development and production frontends
-const allowedOrigins = [
-  process.env.FRONTEND_URL,               // Optional: single origin from env
-  'http://localhost:3000',                // Local development
-  'https://pockettrack.vercel.app'        // Production frontend
-].filter(Boolean);
-
 app.use(cors({
-  origin: function (origin, callback) {
-    // Allow non-browser requests (e.g., curl, server-to-server) where origin is undefined
-    if (!origin) return callback(null, true);
-
-    if (allowedOrigins.includes(origin)) {
-      return callback(null, true);
-    }
-
-    console.warn(`CORS blocked request from origin: ${origin}`);
-    return callback(new Error('Not allowed by CORS'));
-  },
+  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
   credentials: true
 }));
 app.use(express.json());

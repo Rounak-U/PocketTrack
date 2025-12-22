@@ -4,11 +4,31 @@ import { SignInPage } from "@/components/ui/sign-in";
 import { useRouter } from "next/navigation";
 import { useNotifications } from "@/components/ui/notification-context";
 import { getApiBase } from "@/lib/api";
+import { useEffect, useState } from "react";
 
 export default function SignupPage() {
   const router = useRouter();
   const { showSuccess, showError, showInfo } = useNotifications();
   const API_BASE = getApiBase();
+  const [otpEmail, setOtpEmail] = useState<string | undefined>(undefined);
+  const [otpMode, setOtpMode] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const pending = localStorage.getItem("pendingRegistration");
+    const storedOtpMode = localStorage.getItem("otpMode");
+    setOtpMode(storedOtpMode === "true");
+    if (pending) {
+      try {
+        const data = JSON.parse(pending);
+        if (data?.email) {
+          setOtpEmail(data.email);
+        }
+      } catch {
+        // ignore parse errors
+      }
+    }
+  }, []);
 
   const handleSignUp = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -38,10 +58,14 @@ export default function SignupPage() {
       const pending = { ...data, stateId: responseData.stateId };
       localStorage.setItem('pendingRegistration', JSON.stringify(pending));
 
+      if (typeof data.email === "string") {
+        setOtpEmail(data.email);
+      }
       showSuccess("OTP Sent", "Enter the code sent to your email");
       // Stay on signup page but switch to OTP mode — handled by SignInPage's otpMode
       // Add a flag in localStorage to indicate OTP mode
       localStorage.setItem('otpMode', 'true');
+      setOtpMode(true);
     } catch (error) {
       console.error('Registration error:', error);
       showError("Registration Failed", error instanceof Error ? error.message : 'Registration failed. Please try again.');
@@ -69,11 +93,9 @@ export default function SignupPage() {
         heroImageSrc="https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=2160&q=80"
         testimonials={[]}
         onSignIn={handleSignUp}
-        otpMode={typeof window !== 'undefined' && localStorage.getItem('otpMode') === 'true'}
-        onVerifyOtp={async (event: React.FormEvent<HTMLFormElement>) => {
-          event.preventDefault();
-          const formData = new FormData(event.currentTarget);
-          const otp = formData.get('otp');
+        otpMode={otpMode}
+        otpEmail={otpEmail}
+        onVerifyOtpCode={async (otpCode: string) => {
           const pending = localStorage.getItem('pendingRegistration');
           if (!pending) {
             showError('No registration data', 'Please enter your details again');
@@ -82,11 +104,10 @@ export default function SignupPage() {
           const data = JSON.parse(pending);
 
           try {
-            // Include the MojoAuth stateId when verifying the OTP
             const res = await fetch(`${API_BASE}/api/auth/verify-otp`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ ...data, otp })
+              body: JSON.stringify({ ...data, otp: otpCode })
             });
 
             if (!res.ok) {
@@ -95,14 +116,13 @@ export default function SignupPage() {
             }
 
             const responseData = await res.json();
-            // Store tokens and user
             localStorage.setItem('accessToken', responseData.accessToken);
             localStorage.setItem('refreshToken', responseData.refreshToken);
             localStorage.setItem('user', JSON.stringify(responseData.user));
 
-            // Clear pending
             localStorage.removeItem('pendingRegistration');
             localStorage.removeItem('otpMode');
+            setOtpMode(false);
 
             showSuccess('Account Created', 'Welcome to PocketTrack!');
             router.push('/dashboard');
@@ -111,7 +131,7 @@ export default function SignupPage() {
             showError('OTP Verification Failed', err instanceof Error ? err.message : 'OTP verification failed. Please try again.');
           }
         }}
-        onResendOtp={async () => {
+        onResendOtpCode={async () => {
           const pending = localStorage.getItem('pendingRegistration');
           if (!pending) {
             showError('No registration data', 'Please enter your details again');
@@ -129,7 +149,6 @@ export default function SignupPage() {
               throw new Error(err.error || 'Resend failed');
             }
             const resp = await res.json();
-            // update pendingRegistration with any new stateId returned
             if (resp.stateId) {
               const updated = { ...data, stateId: resp.stateId };
               localStorage.setItem('pendingRegistration', JSON.stringify(updated));
