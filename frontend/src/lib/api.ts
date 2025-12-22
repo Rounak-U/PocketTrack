@@ -3,7 +3,36 @@
  * Automatically refreshes access token when it expires (401 errors)
  */
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+/**
+ * Get the API base URL based on environment
+ * Supports both localhost (development) and production URLs
+ */
+function getApiBaseUrl(): string {
+  // Check for explicit environment variable override first
+  if (process.env.NEXT_PUBLIC_API_URL) {
+    return process.env.NEXT_PUBLIC_API_URL;
+  }
+
+  // Check if we're in the browser
+  if (typeof window !== 'undefined') {
+    const hostname = window.location.hostname;
+    
+    // Production environment
+    if (hostname === 'pockettrack.vercel.app' || hostname.includes('vercel.app')) {
+      return 'https://pockettrack-oc7f.onrender.com';
+    }
+    
+    // Localhost/development environment
+    if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '0.0.0.0') {
+      return 'http://localhost:5000';
+    }
+  }
+
+  // Server-side rendering or default to localhost
+  return 'http://localhost:5000';
+}
+
+const API_BASE = getApiBaseUrl();
 
 let isRefreshing = false;
 let refreshPromise: Promise<string | null> | null = null;

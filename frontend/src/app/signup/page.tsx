@@ -3,11 +3,12 @@
 import { SignInPage } from "@/components/ui/sign-in";
 import { useRouter } from "next/navigation";
 import { useNotifications } from "@/components/ui/notification-context";
+import { getApiBase } from "@/lib/api";
 
 export default function SignupPage() {
   const router = useRouter();
   const { showSuccess, showError, showInfo } = useNotifications();
-  const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+  const API_BASE = getApiBase();
 
   const handleSignUp = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();

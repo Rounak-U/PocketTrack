@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { useNotifications } from "@/components/ui/notification-context";
 import { useRef } from "react";
+import { getApiBase } from "@/lib/api";
 
 declare global {
   interface Window {
@@ -15,7 +16,7 @@ declare global {
 export default function LoginPage() {
   const router = useRouter();
   const { showSuccess, showError, showInfo } = useNotifications();
-  const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+  const API_BASE = getApiBase();
   const googleButtonRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
