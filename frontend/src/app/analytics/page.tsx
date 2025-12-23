@@ -33,6 +33,67 @@ import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { apiFetch, getApiBase } from "@/lib/api";
 
+const colors = ['#22c55e', '#38bdf8', '#f97316', '#a855f7', '#ef4444', '#eab308', '#06b6d4', '#f43f5e'];
+
+const StatCard = ({ icon, label, value, helper, tone }: { icon: React.ReactNode; label: string; value: string; helper?: string; tone?: string }) => (
+  <div className={cn("rounded-2xl border border-zinc-800 bg-gradient-to-br p-4 sm:p-5 shadow-lg", tone || "from-zinc-900/60 to-zinc-900/30")}>
+    <div className="flex items-center justify-between">
+      <div className="p-2 rounded-xl bg-white/5 border border-white/10">
+        {icon}
+      </div>
+    </div>
+    <div className="mt-3">
+      <p className="text-xs uppercase tracking-wide text-zinc-400">{label}</p>
+      <p className="text-xl sm:text-2xl font-semibold text-white mt-1">{value}</p>
+      {helper ? <p className="text-xs text-zinc-400 mt-1">{helper}</p> : null}
+    </div>
+  </div>
+);
+
+const Card = ({ shellTitle, children, className }: { shellTitle: string; children: React.ReactNode; className?: string }) => (
+  <div className={cn("bg-gradient-to-br from-neutral-900 via-zinc-900 to-neutral-950 rounded-2xl p-4 sm:p-6 shadow-lg border border-zinc-800", className)}>
+    <div className="flex items-center justify-between mb-3 sm:mb-4">
+      <h3 className="text-base sm:text-lg font-semibold text-slate-100">{shellTitle}</h3>
+    </div>
+    {children}
+  </div>
+);
+
+const EmptyState = ({ message, icon }: { message: string; icon: React.ReactNode }) => (
+  <div className="flex flex-col items-center justify-center h-48 sm:h-64 text-xs sm:text-sm text-zinc-400 gap-2">
+    {icon}
+    <p className="text-sm text-zinc-300">{message}</p>
+  </div>
+);
+
+const EmptyPrompt = () => (
+  <div className="flex flex-col items-center justify-center h-48 sm:h-64 text-xs sm:text-sm text-zinc-400 gap-3">
+    <BarChart3 className="w-12 h-12 sm:w-16 sm:h-16 text-zinc-600" />
+    <div className="text-center space-y-1">
+      <p className="text-sm sm:text-base text-zinc-300">Add transactions to see analytics</p>
+      <p className="text-xs text-zinc-500">Upload statements to generate insights</p>
+    </div>
+    <Link href="/upload" className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs sm:text-sm font-medium transition-colors">
+      <Upload className="w-3 h-3 sm:w-4 sm:h-4" />
+      Upload Statement
+    </Link>
+  </div>
+);
+
+const Insight = ({ pill, icon, text }: { pill: string; icon: React.ReactNode; text: string }) => (
+  <div className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-3 flex gap-3 items-start">
+    <div className="flex items-center gap-2 text-xs text-emerald-300">
+      <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-200">{pill}</span>
+    </div>
+    <div className="flex-1 min-w-0">
+      <div className="flex items-center gap-2 text-sm text-slate-100">
+        {icon}
+        <span className="truncate">{text}</span>
+      </div>
+    </div>
+  </div>
+);
+
 const SidebarComponent = ({ activeItem, setActiveItem }: { activeItem: string, setActiveItem: (item: string) => void }) => {
   const router = useRouter();
 
@@ -222,221 +283,189 @@ const Analytics = () => {
     >
       <SidebarComponent activeItem={activeItem} setActiveItem={setActiveItem} />
       <div className="flex flex-1">
-        <div className="p-4 sm:p-6 md:p-8 rounded-tl-2xl border border-zinc-900 bg-black/70 backdrop-blur-sm flex flex-col gap-4 sm:gap-6 flex-1 w-full md:h-full md:overflow-y-auto">
-          <div className="mb-4 sm:mb-6">
-            <h1 className="text-2xl sm:text-3xl font-semibold text-slate-50 mb-2">Analytics</h1>
-            <p className="text-xs sm:text-sm text-zinc-400">Deep dive into your financial data with advanced analytics and insights.</p>
+        <div className="p-4 sm:p-6 md:p-8 rounded-tl-2xl border border-zinc-900 bg-black/70 backdrop-blur-sm flex flex-col gap-6 sm:gap-7 flex-1 w-full md:h-full md:overflow-y-auto">
+          <div className="flex flex-col gap-2">
+            <h1 className="text-2xl sm:text-3xl font-semibold text-slate-50">Analytics</h1>
+            <p className="text-xs sm:text-sm text-zinc-400">Clear, responsive views of your money across devices.</p>
           </div>
 
-          {/* Monthly Trend Chart */}
-          <div className="bg-gradient-to-br from-neutral-900 via-zinc-900 to-neutral-950 rounded-2xl p-4 sm:p-6 shadow-lg border border-zinc-800">
-            <h3 className="text-base sm:text-lg font-semibold text-slate-100 mb-4">Income vs Spending Trend</h3>
-            {loading ? (
-              <div className="flex items-center justify-center h-48 sm:h-72 text-xs sm:text-sm text-zinc-400">Loading chart...</div>
-            ) : error ? (
-              <div className="flex items-center justify-center h-48 sm:h-72 text-xs sm:text-sm text-rose-400">{error}</div>
-            ) : (monthlyTrends && monthlyTrends.length > 0 ? (
-              <ResponsiveContainer width="100%" height={250}>
-                <AreaChart data={monthlyTrends}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
-                  <XAxis dataKey="monthName" stroke="#6b7280" />
-                  <YAxis stroke="#6b7280" />
-                  <Tooltip
-                    contentStyle={{ backgroundColor: '#020617', border: '1px solid #27272a', borderRadius: '8px', color: '#e5e7eb' }}
-                    formatter={(value: any) => `₹${Number(value).toLocaleString('en-IN')}`}
-                  />
-                  <Legend />
-                  <Area type="monotone" dataKey="totalIncome" stackId="1" stroke="#22c55e" fill="#22c55e" fillOpacity={0.25} name="Income" />
-                  <Area type="monotone" dataKey="totalExpenses" stackId="2" stroke="#f97316" fill="#f97316" fillOpacity={0.25} name="Expenses" />
-                </AreaChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="flex flex-col items-center justify-center h-48 sm:h-72 text-xs sm:text-sm text-zinc-400">
-                <BarChart3 className="w-12 h-12 sm:w-16 sm:h-16 text-zinc-600 mb-4" />
-                <p className="text-sm sm:text-base text-zinc-400 mb-2">No monthly data available</p>
-                <p className="text-xs text-zinc-500 mb-4">Upload transaction statements to see your analytics</p>
-                <Link href="/upload" className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs sm:text-sm font-medium transition-colors">
-                  <Upload className="w-3 h-3 sm:w-4 sm:h-4" />
-                  Upload Statement
-                </Link>
-              </div>
-            ))}
+          {/* Quick stats */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4">
+            <StatCard
+              icon={<TrendingUp className="w-5 h-5 text-emerald-400" />}
+              label="Net Income"
+              value={loading ? "—" : summary ? `₹${Number(summary.netIncome ?? 0).toLocaleString('en-IN')}` : "—"}
+              tone="from-emerald-600/30 to-emerald-600/10"
+              helper={summary?.netIncomeChange ? `${summary.netIncomeChange >= 0 ? "+" : ""}${summary.netIncomeChange}% vs last month` : ""}
+            />
+            <StatCard
+              icon={<Wallet className="w-5 h-5 text-sky-400" />}
+              label="Monthly Budget"
+              value={loading ? "—" : summary?.monthlyBudget ? `₹${Number(summary.monthlyBudget).toLocaleString('en-IN')}` : "Not set"}
+              tone="from-sky-600/30 to-sky-600/10"
+              helper={summary?.monthlyBudget ? `${Math.min(100, Math.round(((summary.totalExpenses || 0) / summary.monthlyBudget) * 100))}% used` : "Set a budget in Dashboard"}
+            />
+            <StatCard
+              icon={<Activity className="w-5 h-5 text-violet-400" />}
+              label="Daily Avg Spend"
+              value={loading ? "—" : (() => {
+                const daily = trends?.dailyTrends || [];
+                if (!daily.length) return "—";
+                const avg = Math.round(daily.reduce((s: number, d: any) => s + (d.totalAmount || 0), 0) / daily.length);
+                return `₹${avg.toLocaleString('en-IN')}`;
+              })()}
+              tone="from-violet-600/30 to-violet-600/10"
+              helper="Past 30 days"
+            />
+            <StatCard
+              icon={<Target className="w-5 h-5 text-amber-400" />}
+              label="Savings Rate"
+              value={loading ? "—" : summary?.savingsRate != null ? `${Math.round(summary.savingsRate * 100) / 100}%` : "—"}
+              tone="from-amber-600/30 to-amber-600/10"
+              helper={summary?.savingsRateChange ? `${summary.savingsRateChange >= 0 ? "+" : ""}${summary.savingsRateChange}% vs last month` : ""}
+            />
           </div>
 
-          {/* Category Comparison */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8">
-            <div className="bg-gradient-to-br from-neutral-900 via-zinc-900 to-neutral-950 rounded-2xl p-4 sm:p-6 shadow-lg border border-zinc-800">
-              <h3 className="text-base sm:text-lg font-semibold text-slate-100 mb-4">Category Spending Changes</h3>
+          {/* Charts row */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5">
+            <Card shellTitle="Income vs Spending">
               {loading ? (
-                <div className="flex items-center justify-center h-48 sm:h-72 text-xs sm:text-sm text-zinc-400">Loading categories...</div>
+                <EmptyState message="Loading chart..." icon={<BarChart3 className="w-10 h-10 text-zinc-600" />} />
               ) : error ? (
-                <div className="flex items-center justify-center h-48 sm:h-72 text-xs sm:text-sm text-rose-400">{error}</div>
-              ) : (categories && categories.length > 0 ? (
-                <ResponsiveContainer width="100%" height={250}>
-                  <BarChart data={categories}>
+                <EmptyState message={error} icon={<TrendingDown className="w-10 h-10 text-rose-500" />} />
+              ) : monthlyTrends?.length ? (
+                <ResponsiveContainer width="100%" height={260}>
+                  <AreaChart data={monthlyTrends}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
-                    <XAxis 
-                      dataKey="category" 
-                      stroke="#6b7280" 
-                      angle={-45} 
-                      textAnchor="end" 
-                      height={80}
-                      tick={{ fill: '#9ca3af', fontSize: 10 }}
-                    />
-                    <YAxis 
-                      stroke="#6b7280"
-                      tick={{ fill: '#9ca3af', fontSize: 10 }}
-                      tickFormatter={(value) => `₹${(value / 1000).toFixed(0)}k`}
-                    />
-                    <Tooltip
-                      contentStyle={{ backgroundColor: '#020617', border: '1px solid #27272a', borderRadius: '8px', color: '#e5e7eb' }}
-                      formatter={(value: any) => [`₹${Number(value).toLocaleString('en-IN')}`, 'Spent']}
-                      labelFormatter={(label) => `Category: ${label}`}
-                    />
-                    <Bar 
-                      dataKey="totalAmount" 
-                      fill="#38bdf8" 
-                      name="Amount"
-                      radius={[4, 4, 0, 0]}
-                    />
-                  </BarChart>
+                    <XAxis dataKey="monthName" stroke="#6b7280" tick={{ fill: '#9ca3af', fontSize: 11 }} />
+                    <YAxis stroke="#6b7280" tick={{ fill: '#9ca3af', fontSize: 11 }} />
+                    <Tooltip contentStyle={{ backgroundColor: '#020617', border: '1px solid #27272a', borderRadius: '8px', color: '#e5e7eb' }} formatter={(v: any) => `₹${Number(v).toLocaleString('en-IN')}`} />
+                    <Area type="monotone" dataKey="totalIncome" stroke="#22c55e" fill="#22c55e" fillOpacity={0.22} name="Income" />
+                    <Area type="monotone" dataKey="totalExpenses" stroke="#f97316" fill="#f97316" fillOpacity={0.22} name="Expenses" />
+                  </AreaChart>
                 </ResponsiveContainer>
               ) : (
-                <div className="flex flex-col items-center justify-center h-48 sm:h-72 text-xs sm:text-sm text-zinc-400">
-                  <PieChart className="w-12 h-12 sm:w-16 sm:h-16 text-zinc-600 mb-4" />
-                  <p className="text-sm sm:text-base text-zinc-400 mb-2">No category data</p>
-                  <p className="text-xs text-zinc-500 mb-4">Upload transactions to see category breakdown</p>
-                  <Link href="/upload" className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs sm:text-sm font-medium transition-colors">
-                    <Upload className="w-4 h-4" />
-                    Upload Statement
-                  </Link>
-                </div>
-              ))}
-            </div>
+                <EmptyPrompt />
+              )}
+            </Card>
 
-            <div className="bg-gradient-to-br from-neutral-900 via-zinc-900 to-neutral-950 rounded-2xl p-4 sm:p-6 shadow-lg border border-zinc-800">
-              <h3 className="text-base sm:text-lg font-semibold text-slate-100 mb-4">Category Spending Overview</h3>
-                    <div className="space-y-3 sm:space-y-4">
-                    {loading ? (
-                      <p className="text-xs sm:text-sm text-zinc-400">Loading categories...</p>
-                    ) : error ? (
-                      <p className="text-xs sm:text-sm text-rose-400">{error}</p>
-                    ) : (categories && categories.length > 0 ? (
-                      categories.slice(0,5).map((c:any, index:number)=>{
-                        const categoryName = c.category || c._id || 'Unknown';
-                        const spent = c.totalAmount || 0;
-                        // Calculate estimated budget (120% of spent) or use actual budget if available
-                        const estimatedBudget = Math.round(spent * 1.2);
-                        const remaining = estimatedBudget - spent;
-                        const percentage = Math.min(100, (spent / Math.max(1, estimatedBudget)) * 100);
-                        
-                        return (
-                          <div key={index} className="flex items-center justify-between gap-2">
-                            <div className="flex-1 min-w-0">
-                              <p className="text-xs sm:text-sm text-zinc-300 font-medium truncate">{categoryName}</p>
-                              <div className="w-full bg-zinc-800 rounded-full h-2 mt-1">
-                                <div
-                                  className={`h-2 rounded-full ${percentage >= 100 ? 'bg-rose-500' : percentage >= 80 ? 'bg-amber-500' : 'bg-emerald-500'}`}
-                                  style={{ width: `${percentage}%` }}
-                                ></div>
-                              </div>
-                            </div>
-                            <div className="text-right ml-2 sm:ml-4 flex-shrink-0">
-                              <p className="text-xs sm:text-sm text-slate-100">₹{Math.round(spent).toLocaleString('en-IN')}</p>
-                              <p className="text-xs text-zinc-400 mt-1">
-                                {c.percentage ? `${c.percentage.toFixed(1)}%` : ''}
-                              </p>
-                            </div>
-                          </div>
-                        );
-                      })
-                    ) : (
-                      <div className="flex flex-col items-center justify-center py-8 sm:py-12 text-xs sm:text-sm text-zinc-400">
-                        <Target className="w-10 h-10 sm:w-12 sm:h-12 text-zinc-600 mb-3" />
-                        <p className="text-sm sm:text-base">No category data available</p>
-                        <p className="text-xs text-zinc-500 mt-1 mb-4">Upload transactions to see category breakdown</p>
-                        <Link href="/upload" className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs sm:text-sm font-medium transition-colors">
-                          <Upload className="w-3 h-3 sm:w-4 sm:h-4" />
-                          Upload Statement
-                        </Link>
+            <Card shellTitle="Category Share">
+              {loading ? (
+                <EmptyState message="Loading categories..." icon={<PieChart className="w-10 h-10 text-zinc-600" />} />
+              ) : error ? (
+                <EmptyState message={error} icon={<TrendingDown className="w-10 h-10 text-rose-500" />} />
+              ) : categories?.length ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
+                  <div className="h-56 sm:h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <RechartsPieChart>
+                        <Pie data={categories} dataKey="totalAmount" nameKey="category" cx="50%" cy="50%" outerRadius="80%">
+                          {categories.map((_, idx) => (
+                            <Cell key={idx} fill={colors[idx % colors.length]} />
+                          ))}
+                        </Pie>
+                        <Tooltip formatter={(value: any) => `₹${Number(value).toLocaleString('en-IN')}`} />
+                      </RechartsPieChart>
+                    </ResponsiveContainer>
+                  </div>
+                  <div className="space-y-3">
+                    {categories.slice(0, 5).map((c: any, idx: number) => (
+                      <div key={idx} className="flex items-center justify-between gap-3 rounded-xl border border-zinc-800 bg-zinc-900/60 px-3 py-2.5">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: colors[idx % colors.length] }} />
+                          <p className="text-sm text-slate-100 truncate">{c.category || c._id || 'Category'}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-semibold text-white">₹{Number(c.totalAmount || 0).toLocaleString('en-IN')}</p>
+                          {c.percentage != null && <p className="text-xs text-zinc-400">{c.percentage.toFixed(1)}%</p>}
+                        </div>
                       </div>
                     ))}
                   </div>
-            </div>
-          </div>
-
-          {/* Advanced Insights */}
-          <div className="bg-gradient-to-br from-neutral-900 via-zinc-900 to-neutral-950 rounded-2xl p-4 sm:p-6 shadow-lg border border-zinc-800">
-            <h3 className="text-base sm:text-lg font-semibold text-slate-100 mb-4">Advanced Insights</h3>
-              <div className="space-y-4">
-              {loading && <p className="text-sm text-zinc-400">Loading insights...</p>}
-              {error && <p className="text-sm text-rose-400">{error}</p>}
-              {!loading && !error && (summary ? (
-                <>
-                  {summary.savingsRate !== null && summary.savingsRate !== undefined ? (
-                    <div className="flex items-start gap-2 sm:gap-3 p-3 sm:p-4 rounded-lg bg-zinc-900/80">
-                      <TrendingUpIcon className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-400 flex-shrink-0" />
-                      <div>
-                        <p className="text-xs sm:text-sm text-slate-100">Savings Rate: {Math.round(summary.savingsRate*100)/100}%</p>
-                      </div>
-                    </div>
-                  ) : null}
-                  {summary.monthlyBudget && summary.monthlyBudget > 0 ? (
-                    <div className="flex items-start gap-2 sm:gap-3 p-3 sm:p-4 rounded-lg bg-zinc-900/80">
-                      <Target className="w-5 h-5 sm:w-6 sm:h-6 text-sky-400 flex-shrink-0" />
-                      <div>
-                        <p className="text-xs sm:text-sm text-slate-100">Budget: ₹{summary.monthlyBudget.toLocaleString('en-IN')}</p>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex items-start gap-3 p-4 rounded-lg bg-zinc-900/80">
-                      <Target className="w-6 h-6 text-zinc-400" />
-                      <div>
-                        <p className="text-sm text-slate-100">Budget: Not Set</p>
-                        <p className="text-xs text-zinc-400 mt-1">Set your budget in the dashboard to track spending</p>
-                      </div>
-                    </div>
-                  )}
-                </>
-              ) : (
-                <div className="flex flex-col items-center justify-center py-12 text-sm text-zinc-400">
-                  <Target className="w-12 h-12 text-zinc-600 mb-3" />
-                  <p className="text-base">No insights available</p>
-                  <p className="text-xs text-zinc-500 mt-1">Upload transactions to see insights</p>
                 </div>
-              ))}
-            </div>
+              ) : (
+                <EmptyPrompt />
+              )}
+            </Card>
           </div>
 
-          {/* Key Metrics */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-gradient-to-br from-neutral-900 via-zinc-900 to-neutral-950 rounded-2xl p-6 shadow-lg border border-zinc-800 text-center">
-              <TrendingUpIcon className="w-8 h-8 text-emerald-400 mx-auto mb-2" />
-              <h4 className="text-lg font-semibold text-slate-100">Savings Rate</h4>
-              <p className="text-2xl font-bold text-emerald-400">{loading ? '-' : (summary && summary.savingsRate !== null && summary.savingsRate !== undefined ? `${Math.round(summary.savingsRate*100)/100}%` : 'Not Set')}</p>
-              <p className="text-sm text-zinc-400">{loading ? '' : (summary && summary.savingsRate !== null ? (summary.savingsRateChange ? `${summary.savingsRateChange >=0 ? '+' : ''}${Math.round(summary.savingsRateChange*100)/100}% from last month` : '') : 'Set budget to see savings rate')}</p>
-            </div>
-            <div className="bg-gradient-to-br from-neutral-900 via-zinc-900 to-neutral-950 rounded-2xl p-6 shadow-lg border border-zinc-800 text-center">
-              <Target className="w-8 h-8 text-sky-400 mx-auto mb-2" />
-              <h4 className="text-lg font-semibold text-slate-100">Budget Adherence</h4>
-              <p className="text-2xl font-bold text-sky-400">{loading ? '-' : (summary && summary.monthlyBudget && summary.monthlyBudget > 0 ? `${Math.round(((summary.totalExpenses||0) / summary.monthlyBudget) * 10000) / 100}%` : 'Not Set')}</p>
-              <p className="text-sm text-zinc-400">{loading ? '' : (summary && summary.monthlyBudget > 0 ? `${summary.overBudgetCategories || 0} categories over budget` : 'Set budget in dashboard')}</p>
-            </div>
-            <div className="bg-gradient-to-br from-neutral-900 via-zinc-900 to-neutral-950 rounded-2xl p-6 shadow-lg border border-zinc-800 text-center">
-              <Activity className="w-8 h-8 text-violet-400 mx-auto mb-2" />
-              <h4 className="text-lg font-semibold text-slate-100">Spending Velocity</h4>
-              <p className="text-2xl font-bold text-violet-400">{loading ? '-' : (() => {
-                try {
-                  const daily = (trends && trends.dailyTrends) || [];
-                  if (!daily.length) return '-';
-                  const sum = daily.reduce((s:any, d:any) => s + (d.totalAmount || 0), 0);
-                  const avg = Math.round((sum / daily.length));
-                  return `₹${avg}/day`;
-                } catch (e) { return '-'; }
-              })()}</p>
-              <p className="text-sm text-zinc-400">Average daily spend</p>
-            </div>
+          {/* Bars + list */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-5">
+            <Card shellTitle="Category Spend (Top)">
+              {loading ? (
+                <EmptyState message="Loading..." icon={<BarChart3 className="w-10 h-10 text-zinc-600" />} />
+              ) : categories?.length ? (
+                <ResponsiveContainer width="100%" height={240}>
+                  <BarChart data={categories.slice(0, 8)}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
+                    <XAxis dataKey="category" stroke="#6b7280" tick={{ fill: '#9ca3af', fontSize: 10 }} />
+                    <YAxis stroke="#6b7280" tick={{ fill: '#9ca3af', fontSize: 10 }} tickFormatter={(v) => `₹${Math.round(v / 1000)}k`} />
+                    <Tooltip contentStyle={{ backgroundColor: '#020617', border: '1px solid #27272a', borderRadius: '8px', color: '#e5e7eb' }} formatter={(v: any) => `₹${Number(v).toLocaleString('en-IN')}`} />
+                    <Bar dataKey="totalAmount" fill="#38bdf8" radius={[6, 6, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <EmptyPrompt />
+              )}
+            </Card>
+
+            <Card shellTitle="Budget & Overruns" className="lg:col-span-2">
+              {loading ? (
+                <EmptyState message="Loading..." icon={<Target className="w-10 h-10 text-zinc-600" />} />
+              ) : categories?.length ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                  {categories.slice(0, 6).map((c: any, idx: number) => {
+                    const spent = c.totalAmount || 0;
+                    const budget = c.budget || Math.max(spent * 1.2, spent + 1);
+                    const pct = Math.min(120, Math.round((spent / budget) * 100));
+                    return (
+                      <div key={idx} className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-3">
+                        <div className="flex items-center justify-between mb-2">
+                          <p className="text-sm font-medium text-slate-100 truncate">{c.category || c._id || 'Category'}</p>
+                          <span className="text-xs text-zinc-400">{pct}%</span>
+                        </div>
+                        <div className="w-full bg-zinc-800 rounded-full h-2">
+                          <div
+                            className={cn(
+                              "h-2 rounded-full",
+                              pct >= 100 ? "bg-rose-500" : pct >= 80 ? "bg-amber-500" : "bg-emerald-500"
+                            )}
+                            style={{ width: `${Math.min(100, pct)}%` }}
+                          />
+                        </div>
+                        <div className="flex items-center justify-between text-xs text-zinc-400 mt-2">
+                          <span>Spent: ₹{Math.round(spent).toLocaleString('en-IN')}</span>
+                          <span>Budget: ₹{Math.round(budget).toLocaleString('en-IN')}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <EmptyPrompt />
+              )}
+            </Card>
           </div>
+
+          {/* Insights */}
+          <Card shellTitle="Smart Insights">
+            {loading ? (
+              <EmptyState message="Loading insights..." icon={<Lightbulb className="w-8 h-8 text-amber-400" />} />
+            ) : summary ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+                <Insight pill="Savings" icon={<TrendingUpIcon className="w-4 h-4 text-emerald-400" />} text={`Savings rate: ${summary.savingsRate != null ? `${Math.round(summary.savingsRate * 100) / 100}%` : 'N/A'}`} />
+                <Insight pill="Budget" icon={<Target className="w-4 h-4 text-sky-400" />} text={summary.monthlyBudget ? `Budget: ₹${summary.monthlyBudget.toLocaleString('en-IN')}` : "Set your budget to track adherence"} />
+                <Insight pill="Spend" icon={<Activity className="w-4 h-4 text-violet-400" />} text={(() => {
+                  const daily = trends?.dailyTrends || [];
+                  if (!daily.length) return "Add transactions to see spend velocity";
+                  const avg = Math.round(daily.reduce((s: number, d: any) => s + (d.totalAmount || 0), 0) / daily.length);
+                  return `Avg daily spend: ₹${avg.toLocaleString('en-IN')}`;
+                })()} />
+              </div>
+            ) : (
+              <EmptyPrompt />
+            )}
+          </Card>
         </div>
       </div>
     </div>
