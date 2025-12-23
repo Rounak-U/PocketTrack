@@ -141,6 +141,37 @@ const Analytics = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const computeDailyAverage = () => {
+    const now = new Date();
+    const currentMonth = now.getMonth() + 1;
+    const currentYear = now.getFullYear();
+    const daysElapsed = now.getDate();
+
+    // Prefer summary (current month) if available
+    if (summary && summary.totalExpenses != null) {
+      const avg = (summary.totalExpenses || 0) / Math.max(1, daysElapsed);
+      if (avg > 0) return `₹${Math.round(avg).toLocaleString('en-IN')}`;
+    }
+
+    const monthData = monthlyTrends.find(
+      (m) => (m.month && m.year ? m.month === currentMonth && m.year === currentYear : m.monthName === now.toLocaleString('en-US', { month: 'short' }))
+    );
+
+    if (monthData) {
+      const spend = monthData.totalExpenses || 0;
+      const avg = spend / Math.max(1, daysElapsed);
+      return `₹${Math.round(avg).toLocaleString('en-IN')}`;
+    }
+
+    const daily = trends?.dailyTrends || [];
+    if (daily.length) {
+      const avg = Math.round(daily.reduce((s: number, d: any) => s + (d.totalAmount || 0), 0) / daily.length);
+      return `₹${avg.toLocaleString('en-IN')}`;
+    }
+
+    return "—";
+  };
+
   useEffect(() => {
     const fetchAnalytics = async () => {
       try {
@@ -150,9 +181,9 @@ const Analytics = () => {
 
         // Fetch multiple endpoints in parallel - handle each independently
         const [monthlyRes, categoriesRes, trendsRes, summaryRes] = await Promise.allSettled([
-          apiFetch(`${API_BASE}/api/analytics/monthly`),
-          apiFetch(`${API_BASE}/api/analytics/categories`),
-          apiFetch(`${API_BASE}/api/analytics/trends`),
+          apiFetch(`${API_BASE}/api/analytics/monthly?rolling=true&months=12`),
+          apiFetch(`${API_BASE}/api/analytics/categories?period=rolling`),
+          apiFetch(`${API_BASE}/api/analytics/trends?days=90`),
           apiFetch(`${API_BASE}/api/analytics/summary`)
         ]);
 
@@ -173,53 +204,39 @@ const Analytics = () => {
 
         // Process categories - try multiple periods to get data
         let categoryDataFound = false;
-        
+        const setCategoriesFromResponse = async (res: any) => {
+          const json = await res.json();
+          const categoryData = json?.categories || json?.spendingByCategory || json?.data || [];
+          if (Array.isArray(categoryData) && categoryData.length > 0) {
+            setCategories(categoryData);
+            categoryDataFound = true;
+          }
+        };
+
         if (categoriesRes.status === 'fulfilled' && categoriesRes.value.ok) {
           try {
-            const categoriesJson = await categoriesRes.value.json();
-            console.log('Categories response:', categoriesJson);
-            const categoryData = categoriesJson?.categories || categoriesJson?.spendingByCategory || categoriesJson?.data || [];
-            console.log('Parsed category data:', categoryData, 'Length:', categoryData?.length);
-            if (Array.isArray(categoryData) && categoryData.length > 0) {
-              setCategories(categoryData);
-              categoryDataFound = true;
-              console.log('Set categories from current month:', categoryData.length);
-            }
+            await setCategoriesFromResponse(categoriesRes.value);
           } catch (e) {
             console.error('Error parsing categories data:', e);
           }
-        } else {
-          console.warn('Categories API failed:', categoriesRes.status === 'rejected' ? categoriesRes.reason : 'Response not OK');
         }
 
         // If no categories found, try different periods as fallback
         if (!categoryDataFound) {
-          console.log('No categories in current month, trying fallback periods...');
-          const fallbackPeriods = ['year', 'quarter'];
+          const fallbackPeriods = ['quarter', 'year'];
           for (const period of fallbackPeriods) {
             try {
-              console.log(`Trying ${period} period...`);
               const fallbackRes = await apiFetch(`${API_BASE}/api/analytics/categories?period=${period}`);
               if (fallbackRes.ok) {
-                const fallbackJson = await fallbackRes.json();
-                const fallbackData = fallbackJson?.categories || fallbackJson?.spendingByCategory || [];
-                console.log(`Fallback ${period} data:`, fallbackData, 'Length:', fallbackData?.length);
-                if (Array.isArray(fallbackData) && fallbackData.length > 0) {
-                  setCategories(fallbackData);
-                  categoryDataFound = true;
-                  console.log(`✓ Found ${fallbackData.length} categories using ${period} period`);
-                  break;
-                }
-              } else {
-                console.warn(`Fallback ${period} period failed:`, fallbackRes.status, fallbackRes.statusText);
+                await setCategoriesFromResponse(fallbackRes);
               }
+              if (categoryDataFound) break;
             } catch (fallbackError) {
               console.warn(`Error fetching categories for ${period} period:`, fallbackError);
             }
           }
-          
+
           if (!categoryDataFound) {
-            console.warn('No categories found in any period - user may not have expense transactions');
             setCategories([]);
           }
         }
@@ -308,14 +325,9 @@ const Analytics = () => {
             <StatCard
               icon={<Activity className="w-5 h-5 text-violet-400" />}
               label="Daily Avg Spend"
-              value={loading ? "—" : (() => {
-                const daily = trends?.dailyTrends || [];
-                if (!daily.length) return "—";
-                const avg = Math.round(daily.reduce((s: number, d: any) => s + (d.totalAmount || 0), 0) / daily.length);
-                return `₹${avg.toLocaleString('en-IN')}`;
-              })()}
+              value={loading ? "—" : computeDailyAverage()}
               tone="from-violet-600/30 to-violet-600/10"
-              helper="Past 30 days"
+              helper="Current month average"
             />
             <StatCard
               icon={<Target className="w-5 h-5 text-amber-400" />}

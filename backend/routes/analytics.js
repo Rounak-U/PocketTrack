@@ -10,7 +10,17 @@ const router = express.Router();
 // @access  Private
 router.get('/monthly', authMiddleware, async (req, res) => {
   try {
-    const { year = new Date().getFullYear(), months = 12 } = req.query;
+    const { year = new Date().getFullYear(), months = 12, rolling = 'false' } = req.query;
+    const monthsInt = parseInt(months);
+    const useRolling = rolling === 'true';
+    const now = new Date();
+
+    const startDate = useRolling
+      ? new Date(now.getFullYear(), now.getMonth() - (monthsInt - 1), 1)
+      : new Date(year, 0, 1);
+    const endDate = useRolling
+      ? new Date(now.getFullYear(), now.getMonth() + 1, 0)
+      : new Date(parseInt(year) + 1, 0, 1);
 
     // Get monthly aggregation for the specified year
     const monthlyData = await Transaction.aggregate([
@@ -18,8 +28,8 @@ router.get('/monthly', authMiddleware, async (req, res) => {
         $match: {
           user: req.user.userId,
           date: {
-            $gte: new Date(year, 0, 1), // January 1st of the year
-            $lt: new Date(year + 1, 0, 1)  // January 1st of next year
+            $gte: startDate,
+            $lt: endDate
           }
         }
       },
@@ -93,7 +103,9 @@ router.get('/monthly', authMiddleware, async (req, res) => {
     ]);
 
     // Fill in missing months with zero values
-    const filledMonthlyData = fillMissingMonths(monthlyData, year, parseInt(months));
+    const filledMonthlyData = useRolling
+      ? fillRollingMonths(monthlyData, monthsInt, endDate)
+      : fillMissingMonths(monthlyData, year, monthsInt);
 
     res.json({
       monthlyTrends: filledMonthlyData,
@@ -127,6 +139,10 @@ router.get('/categories', authMiddleware, async (req, res) => {
     switch (period) {
       case 'week':
         startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        endDate = now;
+        break;
+      case 'rolling':
+        startDate = new Date(now.getFullYear(), now.getMonth() - 5, 1);
         endDate = now;
         break;
       case 'month':
@@ -544,6 +560,35 @@ function fillMissingMonths(data, year, monthsCount) {
   }
 
   return filledData;
+}
+
+// Fill rolling months ending at endDate for monthsCount length
+function fillRollingMonths(data, monthsCount, endDate) {
+  const filled = [];
+  const ref = new Date(endDate);
+  for (let i = monthsCount - 1; i >= 0; i--) {
+    const target = new Date(ref.getFullYear(), ref.getMonth() - i, 1);
+    const targetMonth = target.getMonth() + 1;
+    const targetYear = target.getFullYear();
+    const existing = data.find((d) => d.month === targetMonth && d.year === targetYear);
+    if (existing) {
+      filled.push(existing);
+    } else {
+      filled.push({
+        year: targetYear,
+        month: targetMonth,
+        monthName: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][targetMonth - 1],
+        totalIncome: 0,
+        totalExpenses: 0,
+        netIncome: 0,
+        transactionCount: 0,
+        incomeTransactions: 0,
+        expenseTransactions: 0,
+        savingsRate: 0,
+      });
+    }
+  }
+  return filled;
 }
 
 module.exports = router;
