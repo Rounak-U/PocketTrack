@@ -1,6 +1,3 @@
-// Expense categorization utility
-// Maps merchant names and descriptions to categories using keyword matching
-
 const CATEGORY_KEYWORDS = {
   Food: [
     'swiggy', 'zomato', 'dominos', 'pizza hut', 'mcdonalds', 'burger king',
