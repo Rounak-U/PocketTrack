@@ -66,6 +66,47 @@ router.put('/profile', authMiddleware, async (req, res) => {
   }
 });
 
+// @route   PUT /api/users/category-budgets
+// @desc    Set per-category budgets for the user
+// @access  Private
+router.put('/category-budgets', authMiddleware, async (req, res) => {
+  try {
+    const { budgets } = req.body;
+
+    if (!budgets || typeof budgets !== 'object') {
+      return res.status(400).json({ error: 'budgets must be an object keyed by category' });
+    }
+
+    const cleaned = {};
+    Object.entries(budgets).forEach(([key, val]) => {
+      const num = Number(val);
+      if (!isNaN(num) && num >= 0) {
+        cleaned[key] = num;
+      }
+    });
+
+    const userId = req.user?.userId || req.user?.id || req.user?._id;
+    if (!userId) {
+      return res.status(401).json({ error: 'Invalid token payload' });
+    }
+
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { categoryBudgets: cleaned },
+      { new: true, runValidators: true }
+    ).select('-password');
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    res.json({ message: 'Category budgets updated', categoryBudgets: user.categoryBudgets || {} });
+  } catch (error) {
+    console.error('Update category budgets error:', error);
+    res.status(500).json({ error: 'Server error updating category budgets' });
+  }
+});
+
 // @route   PUT /api/users/change-password
 // @desc    Change user password
 // @access  Private

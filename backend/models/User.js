@@ -42,6 +42,11 @@ const userSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
+  categoryBudgets: {
+    type: Map,
+    of: Number,
+    default: {}
+  },
   joinDate: {
     type: Date,
     default: Date.now

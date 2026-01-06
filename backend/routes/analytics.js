@@ -1,4 +1,5 @@
 const express = require('express');
+const mongoose = require('mongoose');
 const Transaction = require('../models/Transaction');
 const User = require('../models/User');
 const authMiddleware = require('../middleware/authMiddleware');
@@ -11,6 +12,7 @@ const router = express.Router();
 router.get('/monthly', authMiddleware, async (req, res) => {
   try {
     const { year = new Date().getFullYear(), months = 12, rolling = 'false' } = req.query;
+    const userId = new mongoose.Types.ObjectId(req.user.userId);
     const monthsInt = parseInt(months);
     const useRolling = rolling === 'true';
     const now = new Date();
@@ -26,7 +28,7 @@ router.get('/monthly', authMiddleware, async (req, res) => {
     const monthlyData = await Transaction.aggregate([
       {
         $match: {
-          user: req.user.userId,
+          user: userId,
           date: {
             $gte: startDate,
             $lt: endDate
@@ -129,6 +131,7 @@ router.get('/monthly', authMiddleware, async (req, res) => {
 router.get('/categories', authMiddleware, async (req, res) => {
   try {
     const { period = 'month', year = new Date().getFullYear(), month = new Date().getMonth() + 1 } = req.query;
+    const userId = new mongoose.Types.ObjectId(req.user.userId);
 
     console.debug(`Category analytics requested by user=${req.user.userId}, period=${period}, year=${year}, month=${month}`);
 
@@ -167,7 +170,7 @@ router.get('/categories', authMiddleware, async (req, res) => {
     const categoryData = await Transaction.aggregate([
       {
         $match: {
-          user: req.user.userId,
+          user: userId,
           type: 'expense',
           date: {
             $gte: startDate,
@@ -209,9 +212,14 @@ router.get('/categories', authMiddleware, async (req, res) => {
     const totalSpending = categoryData.reduce((sum, cat) => sum + cat.totalAmount, 0);
 
     // Add percentage to each category
+    // Attach user budgets if present
+    const user = await User.findById(req.user.userId).select('categoryBudgets');
+    const budgetMap = (user && user.categoryBudgets) ? Object.fromEntries(user.categoryBudgets) : {};
+
     const categoryDataWithPercentage = categoryData.map(cat => ({
       ...cat,
-      percentage: totalSpending > 0 ? Math.round((cat.totalAmount / totalSpending) * 100 * 100) / 100 : 0
+      percentage: totalSpending > 0 ? Math.round((cat.totalAmount / totalSpending) * 100 * 100) / 100 : 0,
+      budget: budgetMap[cat.category] || null
     }));
 
     // Top spending categories (top 5)
@@ -221,7 +229,7 @@ router.get('/categories', authMiddleware, async (req, res) => {
     const categoryTrends = await Transaction.aggregate([
       {
         $match: {
-          user: req.user.userId,
+          user: userId,
           type: 'expense',
           date: {
             $gte: new Date(now.getFullYear(), now.getMonth() - 5, 1),
@@ -264,7 +272,8 @@ router.get('/categories', authMiddleware, async (req, res) => {
         startDate,
         endDate,
         totalSpending
-      }
+      },
+      categoryBudgets: budgetMap
     });
   } catch (error) {
     console.error('Category analytics error:', error);
@@ -278,13 +287,14 @@ router.get('/categories', authMiddleware, async (req, res) => {
 router.get('/trends', authMiddleware, async (req, res) => {
   try {
     const { days = 30 } = req.query;
+    const userId = new mongoose.Types.ObjectId(req.user.userId);
     const startDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
 
     // Daily spending trends
     const dailyTrends = await Transaction.aggregate([
       {
         $match: {
-          user: req.user.userId,
+          user: userId,
           type: 'expense',
           date: { $gte: startDate }
         }
@@ -315,7 +325,7 @@ router.get('/trends', authMiddleware, async (req, res) => {
     const topMerchants = await Transaction.aggregate([
       {
         $match: {
-          user: req.user.userId,
+          user: userId,
           type: 'expense',
           date: { $gte: startDate }
         }
@@ -349,7 +359,7 @@ router.get('/trends', authMiddleware, async (req, res) => {
     const paymentMethods = await Transaction.aggregate([
       {
         $match: {
-          user: req.user.userId,
+          user: userId,
           date: { $gte: startDate }
         }
       },
@@ -394,7 +404,8 @@ router.get('/trends', authMiddleware, async (req, res) => {
 // @access  Private
 router.get('/summary', authMiddleware, async (req, res) => {
   try {
-    const user = await User.findById(req.user.userId);
+    const userId = new mongoose.Types.ObjectId(req.user.userId);
+    const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
@@ -405,7 +416,7 @@ router.get('/summary', authMiddleware, async (req, res) => {
     const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
 
     const monthlyTransactions = await Transaction.find({
-      user: req.user.userId,
+      user: userId,
       date: { $gte: startOfMonth, $lte: endOfMonth }
     });
 
@@ -443,6 +454,7 @@ router.get('/summary', authMiddleware, async (req, res) => {
 router.get('/spending', authMiddleware, async (req, res) => {
   try {
     const { period = 'month' } = req.query;
+    const userId = new mongoose.Types.ObjectId(req.user.userId);
 
     let startDate;
     const now = new Date();
@@ -466,7 +478,7 @@ router.get('/spending', authMiddleware, async (req, res) => {
     }
 
     const transactions = await Transaction.find({
-      user: req.user.userId,
+      user: userId,
       type: 'expense',
       date: { $gte: startDate }
     });
@@ -495,7 +507,8 @@ router.get('/spending', authMiddleware, async (req, res) => {
 // @access  Private
 router.get('/budget', authMiddleware, async (req, res) => {
   try {
-    const user = await User.findById(req.user.userId);
+    const userId = new mongoose.Types.ObjectId(req.user.userId);
+    const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
@@ -505,7 +518,7 @@ router.get('/budget', authMiddleware, async (req, res) => {
     const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
 
     const monthlyTransactions = await Transaction.find({
-      user: req.user.userId,
+      user: userId,
       type: 'expense',
       date: { $gte: startOfMonth, $lte: endOfMonth }
     });

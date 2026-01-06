@@ -140,6 +140,129 @@ const Analytics = () => {
   const [summary, setSummary] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showDebug, setShowDebug] = useState(false);
+
+  const buildFallbackAnalytics = (transactions: any[]) => {
+    const now = new Date();
+    const monthsCount = 12;
+    const startWindow = new Date(now.getFullYear(), now.getMonth() - (monthsCount - 1), 1);
+    const monthLabels = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+    const monthlyAccumulator: Record<string, any> = {};
+    const categoryAccumulator: Record<string, number> = {};
+    const dailyAccumulator: Record<string, { totalAmount: number; transactionCount: number }> = {};
+
+    transactions.forEach((txn) => {
+      if (!txn || !txn.date) return;
+      const dt = new Date(txn.date);
+      if (isNaN(dt.getTime()) || dt < startWindow) return;
+
+      const monthKey = `${dt.getFullYear()}-${dt.getMonth() + 1}`;
+      monthlyAccumulator[monthKey] = monthlyAccumulator[monthKey] || {
+        year: dt.getFullYear(),
+        month: dt.getMonth() + 1,
+        monthName: monthLabels[dt.getMonth() + 1],
+        totalIncome: 0,
+        totalExpenses: 0,
+        transactionCount: 0,
+        incomeTransactions: 0,
+        expenseTransactions: 0,
+        savingsRate: 0,
+      };
+
+      const amt = Number(txn.amount) || 0;
+      const type = txn.type === 'income' ? 'income' : 'expense';
+      if (type === 'income') {
+        monthlyAccumulator[monthKey].totalIncome += amt;
+        monthlyAccumulator[monthKey].incomeTransactions += 1;
+      } else {
+        monthlyAccumulator[monthKey].totalExpenses += amt;
+        monthlyAccumulator[monthKey].expenseTransactions += 1;
+      }
+      monthlyAccumulator[monthKey].transactionCount += 1;
+
+      if (type === 'expense') {
+        const cat = txn.category || 'Other';
+        categoryAccumulator[cat] = (categoryAccumulator[cat] || 0) + amt;
+      }
+
+      const dailyKey = dt.toISOString().slice(0, 10);
+      dailyAccumulator[dailyKey] = dailyAccumulator[dailyKey] || { totalAmount: 0, transactionCount: 0 };
+      dailyAccumulator[dailyKey].totalAmount += type === 'expense' ? amt : 0;
+      dailyAccumulator[dailyKey].transactionCount += 1;
+    });
+
+    const monthlyTrendsComputed = [] as any[];
+    for (let i = monthsCount - 1; i >= 0; i--) {
+      const target = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const key = `${target.getFullYear()}-${target.getMonth() + 1}`;
+      const existing = monthlyAccumulator[key];
+      if (existing) {
+        const income = existing.totalIncome;
+        const expenses = existing.totalExpenses;
+        existing.netIncome = income - expenses;
+        existing.savingsRate = income > 0 ? ((income - expenses) / income) * 100 : 0;
+        monthlyTrendsComputed.push(existing);
+      } else {
+        monthlyTrendsComputed.push({
+          year: target.getFullYear(),
+          month: target.getMonth() + 1,
+          monthName: monthLabels[target.getMonth() + 1],
+          totalIncome: 0,
+          totalExpenses: 0,
+          netIncome: 0,
+          transactionCount: 0,
+          incomeTransactions: 0,
+          expenseTransactions: 0,
+          savingsRate: 0,
+        });
+      }
+    }
+
+    const categoriesComputed = Object.entries(categoryAccumulator)
+      .sort(([, a], [, b]) => (b as number) - (a as number))
+      .map(([category, totalAmount]) => ({
+        category,
+        totalAmount,
+        percentage: 0,
+      }));
+
+    const totalCatSpend = categoriesComputed.reduce((s, c) => s + (c.totalAmount || 0), 0);
+    categoriesComputed.forEach((c) => {
+      c.percentage = totalCatSpend > 0 ? Math.round((c.totalAmount / totalCatSpend) * 1000) / 10 : 0;
+    });
+
+    const dailyTrends = Object.entries(dailyAccumulator)
+      .map(([date, data]) => ({ date, ...data }))
+      .sort((a, b) => a.date.localeCompare(b.date));
+
+    // Current month summary
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+    const currentMonthTransactions = transactions.filter((txn) => {
+      const dt = new Date(txn.date);
+      return !isNaN(dt.getTime()) && dt >= startOfMonth && dt < endOfMonth;
+    });
+    const totalIncome = currentMonthTransactions
+      .filter((t) => t.type === 'income')
+      .reduce((s, t) => s + (Number(t.amount) || 0), 0);
+    const totalExpenses = currentMonthTransactions
+      .filter((t) => t.type !== 'income')
+      .reduce((s, t) => s + (Number(t.amount) || 0), 0);
+
+    return {
+      monthlyTrends: monthlyTrendsComputed,
+      categories: categoriesComputed,
+      dailyTrends,
+      summary: {
+        totalIncome,
+        totalExpenses,
+        netIncome: totalIncome - totalExpenses,
+        monthlyBudget: 0,
+        savingsRate: totalIncome > 0 ? ((totalIncome - totalExpenses) / totalIncome) * 100 : 0,
+      },
+    };
+  };
 
   const computeDailyAverage = () => {
     const now = new Date();
@@ -179,7 +302,6 @@ const Analytics = () => {
         setError(null);
         const API_BASE = getApiBase();
 
-        // Fetch multiple endpoints in parallel - handle each independently
         const [monthlyRes, categoriesRes, trendsRes, summaryRes] = await Promise.allSettled([
           apiFetch(`${API_BASE}/api/analytics/monthly?rolling=true&months=12`),
           apiFetch(`${API_BASE}/api/analytics/categories?period=rolling`),
@@ -187,28 +309,30 @@ const Analytics = () => {
           apiFetch(`${API_BASE}/api/analytics/summary`)
         ]);
 
-        // Process monthly trends
+        let monthlyData: any[] = [];
+        let categoriesData: any[] = [];
+        let trendsData: any = {};
+        let summaryData: any = null;
+
         if (monthlyRes.status === 'fulfilled' && monthlyRes.value.ok) {
           try {
             const monthlyJson = await monthlyRes.value.json();
-            const monthlyData = monthlyJson?.monthlyTrends || monthlyJson?.data || [];
-            setMonthlyTrends(Array.isArray(monthlyData) ? monthlyData : []);
+            monthlyData = Array.isArray(monthlyJson?.monthlyTrends || monthlyJson?.data)
+              ? (monthlyJson?.monthlyTrends || monthlyJson?.data)
+              : [];
           } catch (e) {
             console.error('Error parsing monthly data:', e);
-            setMonthlyTrends([]);
           }
         } else {
-          console.warn('Monthly analytics failed:', monthlyRes.status === 'rejected' ? monthlyRes.reason : 'Response not OK');
-          setMonthlyTrends([]);
+          console.warn('Monthly analytics failed:', monthlyRes.status === 'rejected' ? monthlyRes.reason : monthlyRes.value?.status);
         }
 
-        // Process categories - try multiple periods to get data
         let categoryDataFound = false;
         const setCategoriesFromResponse = async (res: any) => {
           const json = await res.json();
           const categoryData = json?.categories || json?.spendingByCategory || json?.data || [];
           if (Array.isArray(categoryData) && categoryData.length > 0) {
-            setCategories(categoryData);
+            categoriesData = categoryData;
             categoryDataFound = true;
           }
         };
@@ -221,7 +345,6 @@ const Analytics = () => {
           }
         }
 
-        // If no categories found, try different periods as fallback
         if (!categoryDataFound) {
           const fallbackPeriods = ['quarter', 'year'];
           for (const period of fallbackPeriods) {
@@ -235,42 +358,31 @@ const Analytics = () => {
               console.warn(`Error fetching categories for ${period} period:`, fallbackError);
             }
           }
-
-          if (!categoryDataFound) {
-            setCategories([]);
-          }
         }
 
-        // Process trends
         if (trendsRes.status === 'fulfilled' && trendsRes.value.ok) {
           try {
             const trendsJson = await trendsRes.value.json();
-            setTrends(trendsJson || {});
+            trendsData = trendsJson || {};
           } catch (e) {
             console.error('Error parsing trends data:', e);
-            setTrends({});
           }
         } else {
-          console.warn('Trends analytics failed:', trendsRes.status === 'rejected' ? trendsRes.reason : 'Response not OK');
-          setTrends({});
+          console.warn('Trends analytics failed:', trendsRes.status === 'rejected' ? trendsRes.reason : trendsRes.value?.status);
         }
 
-        // Process summary
         if (summaryRes.status === 'fulfilled' && summaryRes.value.ok) {
           try {
             const summaryJson = await summaryRes.value.json();
-            setSummary(summaryJson?.summary || summaryJson || null);
+            summaryData = summaryJson?.summary || summaryJson || null;
           } catch (e) {
             console.error('Error parsing summary data:', e);
-            setSummary(null);
           }
         } else {
-          console.warn('Summary analytics failed:', summaryRes.status === 'rejected' ? summaryRes.reason : 'Response not OK');
-          setSummary(null);
+          console.warn('Summary analytics failed:', summaryRes.status === 'rejected' ? summaryRes.reason : summaryRes.value?.status);
         }
 
-        // Only set error if ALL requests failed
-        const allFailed = 
+        const allFailed =
           (monthlyRes.status === 'rejected' || (monthlyRes.status === 'fulfilled' && !monthlyRes.value.ok)) &&
           (categoriesRes.status === 'rejected' || (categoriesRes.status === 'fulfilled' && !categoriesRes.value.ok)) &&
           (trendsRes.status === 'rejected' || (trendsRes.status === 'fulfilled' && !trendsRes.value.ok)) &&
@@ -279,6 +391,42 @@ const Analytics = () => {
         if (allFailed) {
           setError('Unable to load analytics data. Please try again or upload transactions first.');
         }
+
+        const categoriesMissing = categoriesData.length === 0;
+        const trendsMissing = !trendsData?.dailyTrends || trendsData.dailyTrends.length === 0;
+        const looksEmpty =
+          monthlyData.length === 0 &&
+          categoriesData.length === 0 &&
+          (!summaryData || (!summaryData.totalIncome && !summaryData.totalExpenses));
+
+        if (looksEmpty || categoriesMissing || trendsMissing) {
+          try {
+            const fallbackRes = await apiFetch(`${API_BASE}/api/transactions?limit=2000`);
+            if (fallbackRes.ok) {
+              const fallbackJson = await fallbackRes.json();
+              const transactions = fallbackJson?.transactions || [];
+              if (Array.isArray(transactions) && transactions.length > 0) {
+                console.info('Analytics API missing pieces; using client-side fallback derived from transactions');
+                const fallbackAnalytics = buildFallbackAnalytics(transactions);
+                if (monthlyData.length === 0) monthlyData = fallbackAnalytics.monthlyTrends;
+                if (categoriesMissing) categoriesData = fallbackAnalytics.categories;
+                if (trendsMissing) trendsData = { ...(trendsData || {}), dailyTrends: fallbackAnalytics.dailyTrends };
+                if (!summaryData || (!summaryData.totalIncome && !summaryData.totalExpenses)) {
+                  summaryData = fallbackAnalytics.summary;
+                }
+              }
+            } else {
+              console.warn('Fallback transactions request failed', fallbackRes.status);
+            }
+          } catch (fallbackErr) {
+            console.error('Fallback analytics error:', fallbackErr);
+          }
+        }
+
+        setMonthlyTrends(Array.isArray(monthlyData) ? monthlyData : []);
+        setCategories(Array.isArray(categoriesData) ? categoriesData : []);
+        setTrends(trendsData || {});
+        setSummary(summaryData || null);
       } catch (err: any) {
         console.error('Analytics fetch error:', err);
         setError(err.message || 'Error fetching analytics');
@@ -304,6 +452,51 @@ const Analytics = () => {
           <div className="flex flex-col gap-2">
             <h1 className="text-2xl sm:text-3xl font-semibold text-slate-50">Analytics</h1>
             <p className="text-xs sm:text-sm text-zinc-400">Clear, responsive views of your money across devices.</p>
+          </div>
+
+          {/* Temp debug panel to validate data presence */}
+          <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-3 sm:p-4">
+            <div className="flex items-center justify-between text-xs text-zinc-300">
+              <span className="font-semibold text-zinc-200">Data debug (temporary)</span>
+              <button
+                onClick={() => setShowDebug((prev) => !prev)}
+                className="px-2 py-1 rounded-lg border border-zinc-700 text-[11px] text-zinc-200 hover:border-zinc-500 transition-colors"
+              >
+                {showDebug ? "Hide" : "Show"}
+              </button>
+            </div>
+            {showDebug && (
+              <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] text-zinc-300">
+                <div className="rounded-lg border border-zinc-800 bg-black/30 p-2">
+                  <p>monthlyTrends: {monthlyTrends?.length ?? 0}</p>
+                  {monthlyTrends?.[0] && (
+                    <p className="text-zinc-400">first month: {monthlyTrends[0].monthName || monthlyTrends[0].month}</p>
+                  )}
+                </div>
+                <div className="rounded-lg border border-zinc-800 bg-black/30 p-2">
+                  <p>categories: {categories?.length ?? 0}</p>
+                  {categories?.[0] && <p className="text-zinc-400">first: {categories[0].category || categories[0]._id}</p>}
+                </div>
+                <div className="rounded-lg border border-zinc-800 bg-black/30 p-2">
+                  <p>dailyTrends: {trends?.dailyTrends?.length ?? 0}</p>
+                  {trends?.dailyTrends?.[0] && <p className="text-zinc-400">first date: {trends.dailyTrends[0].date}</p>}
+                </div>
+                <div className="rounded-lg border border-zinc-800 bg-black/30 p-2">
+                  <p>summary present: {summary ? "yes" : "no"}</p>
+                  {summary && (
+                    <>
+                      <p className="text-zinc-400">expenses: {summary.totalExpenses ?? "-"}</p>
+                      <p className="text-zinc-400">budget: {summary.monthlyBudget ?? "-"}</p>
+                    </>
+                  )}
+                </div>
+                {error && (
+                  <div className="rounded-lg border border-rose-700 bg-rose-900/20 p-2 text-rose-200">
+                    error: {error}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Quick stats */}

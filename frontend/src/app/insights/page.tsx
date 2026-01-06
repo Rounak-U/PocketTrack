@@ -83,6 +83,7 @@ const InsightsPage: React.FC = () => {
   const [insights, setInsights] = useState<Insight[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [canShowInsights, setCanShowInsights] = useState(true);
 
   useEffect(() => {
     let mounted = true;
@@ -106,6 +107,7 @@ const InsightsPage: React.FC = () => {
         let categoriesJson = null;
         let trendsJson = null;
         let monthlyJson = null;
+        let summary: any = null;
 
         if (summaryRes.status === 'fulfilled' && summaryRes.value.ok) {
           try {
@@ -253,7 +255,22 @@ const InsightsPage: React.FC = () => {
         }
 
         // Generate insights from summary data
-        const summary = summaryJson?.summary || summaryJson;
+        summary = summaryJson?.summary || summaryJson;
+
+        const hasBudget = summary?.monthlyBudget && summary.monthlyBudget > 0;
+        const hasSavings = typeof summary?.savingsRate === 'number';
+
+        if (!hasBudget || !hasSavings) {
+          if (mounted) {
+            setCanShowInsights(false);
+            setInsights([]);
+            setLoading(false);
+          }
+          return;
+        }
+
+        setCanShowInsights(true);
+
         if (summary) {
           // Savings rate insights (only if budget is set)
           if (summary.savingsRate !== undefined && summary.savingsRate !== null) {
@@ -408,7 +425,21 @@ const InsightsPage: React.FC = () => {
                   Upload Statement
                 </Link>
               </div>
-            ) : ((insights && insights.length) ? (
+            ) : !canShowInsights ? (
+              <div className="text-center py-12 sm:py-24">
+                <div className="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-amber-500/10 mb-4 sm:mb-6">
+                  <Lightbulb className="w-8 h-8 sm:w-10 sm:h-10 text-amber-400" />
+                </div>
+                <h3 className="text-lg sm:text-xl font-semibold text-slate-100 mb-2">Set budget to see insights</h3>
+                <p className="text-xs sm:text-sm text-zinc-400 mb-4 sm:mb-6 max-w-md mx-auto px-4">
+                  Add a monthly budget and savings rate in your dashboard to unlock personalized insights.
+                </p>
+                <Link href="/dashboard" className="inline-flex items-center gap-2 px-4 sm:px-6 py-2 sm:py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs sm:text-sm font-medium transition-colors">
+                  <Wallet className="w-4 h-4 sm:w-5 sm:h-5" />
+                  Go to Dashboard
+                </Link>
+              </div>
+            ) : insights && insights.length ? (
               <div className="space-y-3 sm:space-y-4">
                 {filtered.map(insight => (
                   <div key={insight.id} className="bg-gradient-to-br from-neutral-900 via-zinc-900 to-neutral-950 border border-zinc-800 rounded-xl p-4 sm:p-6 shadow-lg">
@@ -436,12 +467,12 @@ const InsightsPage: React.FC = () => {
                 <p className="text-xs sm:text-sm text-zinc-400 mb-4 sm:mb-6 max-w-md mx-auto px-4">
                   Upload your transaction statements to get personalized insights and recommendations about your spending habits.
                 </p>
-                <Link href="/upload" className="inline-flex items-center gap-2 px-4 sm:px-6 py-2 sm:py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs sm:text-sm font-medium transition-colors">
+                <Link href="/upload" className="inline-flex items-center gap-2 px-4 sm:px-6 py-2 sm:py-3 bg-emerald-600 hover-bg-emerald-700 text-white rounded-lg text-xs sm:text-sm font-medium transition-colors">
                   <Upload className="w-4 h-4 sm:w-5 sm:h-5" />
                   Upload Statement
                 </Link>
               </div>
-            ))}
+            )}
 
           </div>
         </div>

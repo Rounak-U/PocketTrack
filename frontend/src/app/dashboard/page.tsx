@@ -51,7 +51,8 @@ const defaultSummary = {
   monthlyBudget: 0,
   currentSavings: 0,
   savingsGoal: 0,
-  budgetProgress: 0
+  budgetProgress: 0,
+  categoryBudgets: {}
 };
 
 const defaultRecent: any[] = [];
@@ -205,6 +206,9 @@ const Dashboard = () => {
   const [budgetValue, setBudgetValue] = useState(0);
   const [savingsGoalValue, setSavingsGoalValue] = useState(0);
   const [isSavingBudget, setIsSavingBudget] = useState(false);
+  const [categoryBudgets, setCategoryBudgets] = useState<Record<string, number>>({});
+  const [categoryBudgetDraft, setCategoryBudgetDraft] = useState<Record<string, number>>({});
+  const [isSavingCategoryBudgets, setIsSavingCategoryBudgets] = useState(false);
   const [categories, setCategories] = useState<any[]>([]);
   const [trends, setTrends] = useState<any>({});
   const [monthlyData, setMonthlyData] = useState<any[]>([]);
@@ -299,12 +303,35 @@ const Dashboard = () => {
         setSummary(data.summary || defaultSummary);
         setBudgetValue(data.summary?.monthlyBudget || 0);
         setSavingsGoalValue(data.summary?.savingsGoal || 0);
+        const catBudgets = data.summary?.categoryBudgets || {};
+        setCategoryBudgets(catBudgets);
+        setCategoryBudgetDraft(catBudgets);
       }
     } catch (err: any) {
       console.error('Save budget error:', err);
       setError(err.message || 'Failed to save budget');
     } finally {
       setIsSavingBudget(false);
+    }
+  };
+
+  const handleCategoryBudgetsSave = async () => {
+    try {
+      setIsSavingCategoryBudgets(true);
+      const API_BASE = getApiBase();
+      const res = await apiFetch(`${API_BASE}/api/users/category-budgets`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ budgets: categoryBudgetDraft })
+      });
+      if (!res.ok) throw new Error('Failed to save category budgets');
+      const json = await res.json();
+      setCategoryBudgets(json.categoryBudgets || {});
+      setCategoryBudgetDraft(json.categoryBudgets || {});
+    } catch (err: any) {
+      setError(err.message || 'Error saving category budgets');
+    } finally {
+      setIsSavingCategoryBudgets(false);
     }
   };
 
@@ -446,6 +473,46 @@ const Dashboard = () => {
                     </div>
                   </div>
                 )}
+
+                <div className="rounded-2xl border border-zinc-800 bg-gradient-to-br from-neutral-900 via-zinc-900 to-neutral-950 p-4 sm:p-6 shadow-lg">
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <h3 className="text-base sm:text-lg font-semibold text-slate-100">Per-category budgets</h3>
+                      <p className="text-xs sm:text-sm text-zinc-400">Set limits for each spend type</p>
+                    </div>
+                    <button
+                      onClick={handleCategoryBudgetsSave}
+                      disabled={isSavingCategoryBudgets}
+                      className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 text-sm disabled:opacity-60"
+                    >
+                      {isSavingCategoryBudgets ? 'Saving…' : 'Save budgets'}
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {Array.from(new Set([
+                      ...categories.map((c: any) => c.category || c._id).filter(Boolean),
+                      'Food','Transport','Entertainment','Shopping','Bills','Healthcare','Education','Other'
+                    ])).map((cat) => (
+                      <div key={cat as string} className="rounded-xl border border-zinc-800 bg-black/40 p-3">
+                        <div className="flex items-center justify-between mb-2">
+                          <p className="text-sm font-medium text-slate-100">{cat as string}</p>
+                          <span className="text-xs text-zinc-500">₹</span>
+                        </div>
+                        <input
+                          type="number"
+                          min={0}
+                          value={categoryBudgetDraft?.[cat as string] ?? ''}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setCategoryBudgetDraft((prev) => ({ ...prev, [cat as string]: val === '' ? '' as any : Number(val) }));
+                          }}
+                          className="w-full rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm text-white focus:border-emerald-500 focus:outline-none"
+                          placeholder="Enter budget"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
 
                 {/* Spending Trends Chart */}
                 {trends?.dailyTrends && trends.dailyTrends.length > 0 && (

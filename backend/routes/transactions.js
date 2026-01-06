@@ -156,4 +156,58 @@ router.delete('/:id', authMiddleware, async (req, res) => {
   }
 });
 
+// @route   POST /api/transactions/seed/january
+// @desc    Insert a small set of January dummy transactions for the authenticated user
+// @access  Private
+router.post('/seed/january', authMiddleware, async (req, res) => {
+  try {
+    const year = new Date().getFullYear();
+    const startOfJan = new Date(year, 0, 1);
+    const endOfJan = new Date(year, 1, 0, 23, 59, 59, 999);
+
+    const janDate = (day) => new Date(year, 0, day);
+
+    const samples = [
+      { amount: 52000, description: 'January Salary', category: 'Other', type: 'income', date: janDate(1), paymentMethod: 'Bank Transfer', tags: ['seed', 'jan'] },
+      { amount: 7500, description: 'Freelance UI Project', category: 'Other', type: 'income', date: janDate(5), paymentMethod: 'Bank Transfer', tags: ['seed', 'jan'] },
+      { amount: 1800, description: 'Metro & Cabs', category: 'Transport', type: 'expense', date: janDate(2), paymentMethod: 'UPI', tags: ['seed', 'jan'] },
+      { amount: 6200, description: 'Groceries - FreshMart', category: 'Food', type: 'expense', date: janDate(3), paymentMethod: 'Debit Card', tags: ['seed', 'jan'] },
+      { amount: 2300, description: 'Internet + Mobile Bills', category: 'Bills', type: 'expense', date: janDate(4), paymentMethod: 'UPI', tags: ['seed', 'jan'] },
+      { amount: 2800, description: 'Streaming & Apps', category: 'Entertainment', type: 'expense', date: janDate(6), paymentMethod: 'Credit Card', tags: ['seed', 'jan'] },
+      { amount: 5400, description: 'Clothing - Winter', category: 'Shopping', type: 'expense', date: janDate(8), paymentMethod: 'Credit Card', tags: ['seed', 'jan'] },
+      { amount: 1500, description: 'Health Checkup', category: 'Healthcare', type: 'expense', date: janDate(9), paymentMethod: 'Debit Card', tags: ['seed', 'jan'] },
+      { amount: 3200, description: 'Books & Courses', category: 'Education', type: 'expense', date: janDate(10), paymentMethod: 'UPI', tags: ['seed', 'jan'] },
+      { amount: 900, description: 'Coffee & Quick Bites', category: 'Food', type: 'expense', date: janDate(11), paymentMethod: 'UPI', tags: ['seed', 'jan'] },
+      { amount: 2100, description: 'Movies & Events', category: 'Entertainment', type: 'expense', date: janDate(12), paymentMethod: 'UPI', tags: ['seed', 'jan'] },
+    ];
+
+    let inserted = 0;
+
+    for (const sample of samples) {
+      const exists = await Transaction.findOne({
+        user: req.user.userId,
+        description: sample.description,
+        amount: sample.amount,
+        type: sample.type,
+        date: { $gte: startOfJan, $lte: endOfJan }
+      });
+
+      if (!exists) {
+        await Transaction.create({ ...sample, user: req.user.userId });
+        inserted += 1;
+      }
+    }
+
+    res.json({
+      message: 'January dummy data processed',
+      inserted,
+      attempted: samples.length,
+      year
+    });
+  } catch (error) {
+    console.error('Seed January error:', error);
+    res.status(500).json({ error: 'Failed to seed January data' });
+  }
+});
+
 module.exports = router;

@@ -77,7 +77,8 @@ router.get('/summary', authMiddleware, async (req, res) => {
         currentSavings: user.currentSavings,
         savingsGoal: user.savingsGoal,
         budgetProgress,
-        recentTransactions
+        recentTransactions,
+        categoryBudgets: user.categoryBudgets || {}
       }
     });
   } catch (error) {
