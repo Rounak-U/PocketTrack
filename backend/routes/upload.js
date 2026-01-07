@@ -458,10 +458,15 @@ function extractTransactionFromText(text, userId) {
 
   // Check if this looks like a transaction statement with multiple transactions
   // If so, extract the most recent/largest transaction
-  const isStatement = /transaction\s+statement/i.test(text) || 
-                      /transaction\s+details/i.test(text) ||
-                      /(?:debit|credit).*?(?:debit|credit)/i.test(text) || // Multiple transaction types
-                      /(?:Payment\s+to|Paid\s+to).*?(?:Payment\s+to|Paid\s+to)/i.test(text); // Multiple payment entries
+  const datePattern = /(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})|(\d{4}[\/\-]\d{1,2}[\/\-]\d{1,2})|((?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{1,2},?\s+\d{2,4})/gi;
+  const dateHits = text.match(datePattern) || [];
+
+  const isStatement =
+    dateHits.length >= 3 ||
+    /transaction\s+statement/i.test(text) ||
+    /transaction\s+details/i.test(text) ||
+    /(?:debit|credit).*?(?:debit|credit)/i.test(text) ||
+    /(?:Payment\s+to|Paid\s+to).*?(?:Payment\s+to|Paid\s+to)/i.test(text);
   
   if (isStatement) {
     return extractAllFromStatement(text, userId);
@@ -614,120 +619,110 @@ function extractTransactionFromText(text, userId) {
 
 // Extract ALL transactions from statement-style PDF (like PhonePe, bank statements)
 function extractAllFromStatement(text, userId) {
-  const lines = text.split('\n').map(line => line.trim()).filter(line => line.length > 0);
-  
-  // Pattern to find transaction rows - look for "Payment to" or "Paid to" followed by merchant name
-  const transactionStartPattern = /(?:Payment\s+to|Paid\s+to)\s+[A-Z]/i;
-  
-  const allTransactions = [];
-  
-  // Find ALL transactions in the statement (don't break after first)
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    
-    // Check if this line starts a new transaction
-    if (transactionStartPattern.test(line)) {
-      // Extract merchant name from "Payment to NETFLIX COM" or "Paid to ZOMATO"
-      const merchantMatch = line.match(/(?:Payment\s+to|Paid\s+to)\s+([A-Z][A-Z\s]+?)(?:\s+Transaction|\s+ID|\s+UTR|$)/i);
-      if (merchantMatch) {
-        const merchantName = merchantMatch[1].trim();
-        
-        // Look backwards for date (usually 1-2 lines above)
-        let transactionDate = null;
-        for (let j = Math.max(0, i - 3); j < i; j++) {
-          const dateMatch = lines[j].match(/((?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{1,2},\s+\d{4})/i);
-          if (dateMatch) {
-            transactionDate = dateMatch[1];
-            break;
-          }
-        }
-        
-        // Look forwards for amount (usually in same line or next few lines)
-        let transactionAmount = null;
-        for (let j = i; j < Math.min(lines.length, i + 5); j++) {
-          const amountMatch = lines[j].match(/₹\s*([\d,]+\.?\d*)/);
-          if (amountMatch) {
-            const amountStr = amountMatch[1].replace(/,/g, '');
-            const amount = parseFloat(amountStr);
-            if (!isNaN(amount) && amount > 0 && amount < 10000000) {
-              transactionAmount = amount;
-              break;
-            }
-          }
-        }
-        
-        // If we have both merchant and amount, create a transaction object
-        if (merchantName && transactionAmount) {
-          const extracted = {
-            user: userId,
-            amount: transactionAmount,
-            description: '',
-            category: 'Other',
-            type: 'expense',
-            date: new Date(),
-            paymentMethod: 'Other',
-            tags: ['Receipt']
-          };
-          
-          // Parse date
-          if (transactionDate) {
-            const dateParts = transactionDate.match(/(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+(\d{1,2}),\s+(\d{4})/i);
-            if (dateParts) {
-              const monthMap = {
-                jan: '01', feb: '02', mar: '03', apr: '04', may: '05', jun: '06',
-                jul: '07', aug: '08', sep: '09', oct: '10', nov: '11', dec: '12'
-              };
-              const month = monthMap[dateParts[1].toLowerCase()];
-              const day = dateParts[2].padStart(2, '0');
-              const year = dateParts[3];
-              const dateStr = `${day}/${month}/${year}`;
-              const normalizedDate = normalizeDate(dateStr);
-              if (normalizedDate) {
-                extracted.date = normalizedDate.toDate();
-              }
-            }
-          }
-          
-          // Clean up merchant name
-          extracted.description = merchantName
-            .replace(/\s+/g, ' ')
-            .replace(/\b(?:COM|INC|LTD|PVT|LLC)\b/gi, '')
-            .trim()
-            .substring(0, 100);
-          
-          // Remove transaction IDs and other noise
-          extracted.description = extracted.description
-            .replace(/\b(?:Transaction\s+ID|UTR\s+No\.?|TXN\s+ID)\s*:?\s*[A-Z0-9]+\b/gi, '')
-            .replace(/\b[A-Z]{4}\d{20,}\b/g, '')
-            .replace(/\bT\d{18,}\b/g, '')
-            .replace(/\b\d{12}\b/g, '')
-            .replace(/\bPaid\s+by\s+X+\d+\b/gi, '')
-            .replace(/\bAUTOPAY\b/gi, '')
-            .trim()
-            .replace(/\s+/g, ' ');
-          
-          // Set transaction type (assume expense for debit transactions)
-          if (/debit/i.test(line)) {
-            extracted.type = 'expense';
-          } else if (/credit/i.test(line)) {
-            extracted.type = 'income';
-          }
-          
-          // Categorize
-          if (extracted.description && extracted.description !== 'Receipt Transaction') {
-            extracted.category = categorizeTransaction(extracted.description);
-          } else {
-            extracted.description = 'Receipt Transaction';
-          }
-          
-          allTransactions.push(extracted);
+  const lines = text.split('\n').map(line => line.trim()).filter(Boolean);
+
+  const datePatterns = [
+    /\b\d{1,2}[\/-]\d{1,2}[\/-]\d{2,4}\b/, // 12/01/2025 or 12-01-2025
+    /\b\d{4}[\/-]\d{1,2}[\/-]\d{1,2}\b/,   // 2025-01-12
+    /\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{1,2},?\s+\d{2,4}\b/i
+  ];
+
+  const amountPatterns = [
+    /(?:₹|INR|Rs\.?|USD|\$)\s*-?\s*([\d,]+(?:\.\d{1,2})?)/i,
+    /(\b-?\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?\b)/ // fallback without currency symbol
+  ];
+
+  const isDateLine = (line) => datePatterns.some((pat) => pat.test(line));
+  const getDateFromLine = (line) => {
+    for (const pat of datePatterns) {
+      const m = line.match(pat);
+      if (m) return m[0];
+    }
+    return null;
+  };
+
+  const getAmountFromLines = (blockLines) => {
+    const joined = blockLines.join(' ');
+    for (const pat of amountPatterns) {
+      const m = joined.match(pat);
+      if (m) {
+        const value = parseFloat(m[1].replace(/,/g, ''));
+        if (!Number.isNaN(value) && Math.abs(value) > 0 && Math.abs(value) < 10000000) {
+          return { amount: Math.abs(value), isNegative: value < 0 };
         }
       }
     }
+    return null;
+  };
+
+  const pickDescription = (blockLines) => {
+    const noise = ['transaction id', 'utr', 'ref', 'upi', 'imps', 'rtgs', 'id', 'debit', 'credit', 'payment to', 'paid to', 'payment'];
+    for (const line of blockLines) {
+      const lower = line.toLowerCase();
+      const hasLetters = /[a-z]/i.test(line);
+      const hasAmount = amountPatterns.some((pat) => pat.test(line));
+      if (!hasLetters || hasAmount) continue;
+      if (noise.some((word) => lower.includes(word))) continue;
+      if (line.length < 3) continue;
+      return line.replace(/\s+/g, ' ').substring(0, 100);
+    }
+    return 'Receipt Transaction';
+  };
+
+  const blocks = [];
+  let current = null;
+
+  const flushCurrent = () => {
+    if (!current) return;
+    const amountInfo = getAmountFromLines(current.lines);
+    if (!amountInfo) {
+      current = null;
+      return;
+    }
+
+    const normalizedDate = normalizeDate(current.dateStr);
+    const parsedDate = normalizedDate ? normalizedDate.toDate() : new Date();
+    const description = pickDescription(current.lines);
+    let type = /credit|cr|refund|reversal|received/i.test(current.lines.join(' ')) ? 'income' : 'expense';
+    if (amountInfo.isNegative) {
+      type = 'expense';
+    }
+
+    const cleanedDescription = description
+      .replace(/\b(?:COM|INC|LTD|PVT|LLC)\b/gi, '')
+      .replace(/\b(?:Transaction\s+ID|UTR\s+No\.?|TXN\s+ID)\s*:?\s*[A-Z0-9]+\b/gi, '')
+      .replace(/\b[A-Z]{4}\d{8,}\b/g, '')
+      .replace(/\bT\d{8,}\b/g, '')
+      .replace(/\s+/g, ' ')
+      .trim() || 'Receipt Transaction';
+
+    blocks.push({
+      user: userId,
+      amount: amountInfo.amount,
+      description: cleanedDescription,
+      category: categorizeTransaction(cleanedDescription),
+      type,
+      date: parsedDate,
+      paymentMethod: 'Other',
+      tags: ['Receipt']
+    });
+
+    current = null;
+  };
+
+  for (const line of lines) {
+    if (isDateLine(line)) {
+      flushCurrent();
+      const dateStr = getDateFromLine(line);
+      current = { dateStr, lines: [line] };
+    } else if (current) {
+      current.lines.push(line);
+    }
   }
-  
-  // Return array of transactions (or single transaction object for backward compatibility if only one found)
-  return allTransactions;
+
+  flushCurrent();
+
+  return blocks;
 }
 
 // @route   GET /api/upload/receipt/:filename
