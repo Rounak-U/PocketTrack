@@ -18,7 +18,6 @@ const transactionSchema = new mongoose.Schema({
   category: {
     type: String,
     required: true,
-    // Allow categories produced by automatic categorization logic
     enum: ['Food', 'Transport', 'Travel', 'Shopping', 'Entertainment', 'Bills', 'Healthcare', 'Education', 'Personal', 'Other']
   },
   type: {
