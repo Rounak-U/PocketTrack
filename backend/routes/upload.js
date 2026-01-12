@@ -5,7 +5,6 @@ const fs = require('fs');
 const path = require('path');
 const moment = require('moment');
 const pdfParseModule = require('pdf-parse');
-const pdfParse = pdfParseModule.PDFParse || pdfParseModule;
 const Transaction = require('../models/Transaction');
 const authMiddleware = require('../middleware/authMiddleware');
 const { categorizeTransaction } = require('../utils/categorization');
@@ -305,11 +304,7 @@ router.post('/receipt', authMiddleware, receiptUpload.single('receiptFile'), asy
     if (fileExt === '.pdf') {
       try {
         const dataBuffer = fs.readFileSync(filePath);
-        // pdf-parse v2.x requires instantiating the PDFParse class
-        const pdfParser = new pdfParse({ data: dataBuffer });
-        const pdfTextData = await pdfParser.getText();
-        // getText() returns an object with 'text' and 'pages' properties
-        const pdfText = pdfTextData.text || '';
+        const pdfText = await getPdfTextFromBuffer(dataBuffer);
         extractedData = extractTransactionFromText(pdfText, req.user.userId);
       } catch (error) {
         console.error('PDF parsing error:', error);
@@ -615,6 +610,33 @@ function extractTransactionFromText(text, userId) {
   }
 
   return extracted;
+}
+
+async function getPdfTextFromBuffer(dataBuffer) {
+  // Support both pdf-parse 1.x (function export) and 2.x (class export)
+  if (typeof pdfParseModule === 'function') {
+    const parsed = await pdfParseModule(dataBuffer);
+    return (parsed && parsed.text) || '';
+  }
+
+  const ParserCtor =
+    (pdfParseModule && pdfParseModule.PDFParse) ||
+    (pdfParseModule && pdfParseModule.default);
+
+  if (typeof ParserCtor === 'function') {
+    const parser = new ParserCtor({ data: dataBuffer });
+    if (typeof parser.getText === 'function') {
+      const result = await parser.getText();
+      if (typeof result === 'string') {
+        return result;
+      }
+      if (result && typeof result === 'object' && result.text) {
+        return result.text;
+      }
+    }
+  }
+
+  throw new Error('Unsupported pdf-parse module format');
 }
 
 // Extract ALL transactions from statement-style PDF (like PhonePe, bank statements)
