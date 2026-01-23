@@ -120,15 +120,12 @@ const Profile = () => {
     { label: "Lifestyle", value: "0%", tone: "text-sky-300" },
     { label: "Savings & Investing", value: "0%", tone: "text-amber-300" },
   ]);
-
   const formatJoinDate = (value: string) => {
     if (!value) return 'New member';
     const dt = new Date(value);
     if (Number.isNaN(dt.getTime())) return value;
     return dt.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
   };
-
-  // Fetch profile on mount
   React.useEffect(() => {
     let mounted = true;
     (async () => {
@@ -165,8 +162,6 @@ const Profile = () => {
     })();
     return () => { mounted = false; };
   }, []);
-
-  // Lock background scroll when delete modal is open
   React.useEffect(() => {
     if (showDeleteConfirm) {
       const original = document.body.style.overflow;
@@ -175,15 +170,11 @@ const Profile = () => {
     }
     return () => {};
   }, [showDeleteConfirm]);
-
-  // Fetch account statistics and spending profile
   React.useEffect(() => {
     let mounted = true;
     (async () => {
       try {
         const API_BASE = getApiBase();
-        
-        // Fetch analytics data in parallel
         const [summaryRes, categoriesRes, insightsRes] = await Promise.all([
           apiFetch(`${API_BASE}/api/analytics/summary`),
           apiFetch(`${API_BASE}/api/analytics/categories`),
@@ -191,33 +182,16 @@ const Profile = () => {
         ]);
 
         if (!mounted) return;
-
-        // Get transaction count from summary
         const summaryJson = summaryRes.ok ? await summaryRes.json() : null;
         const transactionCount = summaryJson?.summary?.transactionCount || 0;
-
-        // Get active categories count
         const categoriesJson = categoriesRes.ok ? await categoriesRes.json() : null;
         const activeCategories = categoriesJson?.categories?.length || 0;
-
-        // Get savings rate
         const savingsRate = summaryJson?.summary?.savingsRate || 0;
-
-        // Calculate monthly insights count (simplified - count insights from insights page logic)
-        // We'll fetch insights separately or calculate from trends
-        const monthlyInsights = 0; // Will be calculated from insights data
-
-        // Calculate spending profile breakdown
+        const monthlyInsights = 0; 
         const categories = categoriesJson?.categories || [];
         const totalSpending = categories.reduce((sum: number, cat: any) => sum + (cat.totalAmount || 0), 0);
-        
-        // Categorize spending into Essentials, Lifestyle, Savings
-        // Essentials: Food, Transport, Bills, Healthcare
-        // Lifestyle: Entertainment, Shopping, Education
-        // Savings: Income - Expenses (calculated separately)
         const essentialCategories = ['Food', 'Transport', 'Bills', 'Healthcare'];
         const lifestyleCategories = ['Entertainment', 'Shopping', 'Education'];
-        
         let essentialsTotal = 0;
         let lifestyleTotal = 0;
         
@@ -248,15 +222,14 @@ const Profile = () => {
             { label: "Savings & Investing", value: `${savingsPercent}%`, tone: "text-amber-300" },
           ]);
         }
-      } catch (err: any) {
+      }
+      catch (err: any) 
+      {
         console.error('Fetch account stats error:', err);
-        // Don't set error state, just use defaults
       }
     })();
     return () => { mounted = false; };
   }, []);
-
-  // Fetch insights count separately
   React.useEffect(() => {
     let mounted = true;
     (async () => {
@@ -329,7 +302,6 @@ const Profile = () => {
   
 
   const handleSave = () => {
-    // Save to backend
     (async () => {
       try {
         const API_BASE = getApiBase();
@@ -346,24 +318,27 @@ const Profile = () => {
         setEditData(json.user || editData);
         setIsEditing(false);
         setProfileError(null);
-      } catch (err: any) {
+      } 
+      catch (err: any) 
+      {
         console.error('Profile update error:', err);
         setProfileError(err.message || 'Failed to update profile');
       }
     })();
   };
 
-  const handleCancel = () => {
+  const handleCancel = () => 
+  {
     setEditData(userData);
     setIsEditing(false);
   };
 
-  const handleLogout = () => {
-    // Clear all auth and app state from localStorage on logout
-    if (typeof window !== "undefined") {
+  const handleLogout = () => 
+  {
+    if (typeof window !== "undefined") 
+    {
       localStorage.clear();
     }
-    // Redirect to login page
     router.push('/login');
   };
 
