@@ -4,12 +4,41 @@ const cors = require('cors');
 const passport = require('passport');
 const session = require('express-session');
 const dotenv = require('dotenv');
+const axios = require('axios');
 
 // Load environment variables
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+const KEEP_ALIVE_INTERVAL_MS = 20 * 60 * 1000;
+
+const startKeepAliveCron = () => {
+  const enabled = process.env.ENABLE_KEEP_ALIVE === 'true' || process.env.NODE_ENV === 'production';
+  if (!enabled) return;
+
+  const targetUrl =
+    process.env.KEEP_ALIVE_URL ||
+    process.env.PUBLIC_URL ||
+    process.env.BACKEND_URL ||
+    `http://localhost:${PORT}`;
+
+  const ping = async () => {
+    try {
+      const response = await axios.get(`${targetUrl.replace(/\/$/, '')}/api/health`, {
+        timeout: 10000,
+      });
+      console.log(`[keep-alive] pinged ${targetUrl}/api/health -> ${response.status}`);
+    } catch (error) {
+      const status = error.response?.status;
+      const message = error.message || 'Unknown error';
+      console.error(`[keep-alive] ping failed (${status || 'no-status'}): ${message}`);
+    }
+  };
+
+  setInterval(ping, KEEP_ALIVE_INTERVAL_MS);
+  ping();
+};
 
 // Middleware
 const allowedOrigins = [
@@ -82,6 +111,7 @@ app.use('*', (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
+  startKeepAliveCron();
 });
 
 module.exports = app;
